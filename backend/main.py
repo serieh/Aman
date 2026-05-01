@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from agents.runner import run_chat
+from agents.runner import run_agent
 
 app = FastAPI()
 
@@ -8,7 +8,7 @@ def home():
     return {"msg": ";3"}
 
 @app.post("/chat/{chat_id}")
-def chat(chat_id: int, message: str):
+async def chat(chat_id: str, message: str):
     print(f"Received chat request for chat_id: {chat_id} with message: {message}")
-    reply = run_chat(chat_id, message)
+    reply = await run_agent(chat_id, message)
     return {"reply": reply} 

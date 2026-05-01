@@ -1,21 +1,25 @@
-from .memory import load_chat_history, save_message
+from .memory import get_history_for_agent, save_message
 from .creator import AgentCreator
+from .prompts.builder import build_system_prompt
+from langchain_core.messages import SystemMessage, HumanMessage
 
 agent = AgentCreator()
 
-def run_chat(chat_id: int | str, user_message: str) -> str:
-    print(f"Running chat for chat_id: {chat_id} with message: {user_message}")
+async def run_agent(chat_id: str, user_input: str):
+    history = await get_history_for_agent(chat_id, agent)
 
-    # Load existing history and append the new user message
-    history = load_chat_history(chat_id)
-    history.append({"role": "user", "content": user_message})
-    
+    # system_prompt = build_system_prompt()
 
-    # Get reply (history is passed directly — no double-wrapping)
-    reply = agent.chat(history)  # ← single dict, not history list
+    messages = [
+        # SystemMessage(content=system_prompt),
+        *history,
+        HumanMessage(content=user_input),
+    ]
 
-    # Persist both sides
-    save_message(chat_id, "user", user_message)
+    save_message(chat_id, "user", user_input)
+
+    reply = await agent.chat(messages)
+
     save_message(chat_id, "assistant", reply)
 
-    return reply    
+    return reply
