@@ -3,24 +3,38 @@ from langchain_core.tools import tool
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
 from typing import TypedDict, Annotated, Sequence
-import operator
+import operator, json
+from langchain_core.messages import SystemMessage, HumanMessage
+from .prompts.summary import summary_prompt
 
 # Import for any tool here, e.g.:
 # from .tools.rag import rag_tool
-
 
 class AgentState(TypedDict):
     messages: Annotated[Sequence, operator.add]
     user_id: str
     chat_id: str
-    emotion_context: dict | None                 
+    emotion_context: dict | None   
+
 
 # Tools will be added here when YOU MY FRIEND finshed them :|
 TOOLS = []
 
 def build_llm():
-    llm = ChatOllama(model="qwen3.5:4b", stop=["<|im_start|>", "<|im_end|>"],) 
+    llm = ChatOllama(model="qwen3.5:4b", stop=["<|im_start|>", "<|im_end|>"],num_ctx=32768,) 
     return llm.bind_tools(TOOLS)
+
+async def summarize(user_message: str):
+    llm = ChatOllama(model="qwen3.5:4b", format="json")
+    messages = [
+        SystemMessage(content = summary_prompt),
+        HumanMessage(content=user_message)
+    ]
+
+    reply = llm.invoke(messages)
+    parsed = json.loads(reply.content)
+
+    return parsed
 
 
 def agent_node(state: AgentState) -> dict:
