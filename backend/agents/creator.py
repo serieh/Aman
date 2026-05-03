@@ -1,37 +1,67 @@
-from langchain_core.messages import HumanMessage
 from langchain_ollama import ChatOllama
-from langchain.agents import create_agent
-from .prompts.builder import build_system_prompt
+from langchain_core.tools import tool
+from langgraph.graph import StateGraph, END
+from langgraph.prebuilt import ToolNode
+from typing import TypedDict, Annotated, Sequence
+import operator
+
+# Import for any tool here, e.g.:
+# from .tools.rag import rag_tool
 
 
-class AgentCreator:
-    def __init__(self):
-        print("Initializing AgentCreator...")
-        self.llm = ChatOllama(
-            model="qwen3.5:9b",
-            stop=["<|im_start|>", "<|im_end|>", "<|endoftext|>"],
-        )
-        self.agent = create_agent(self.llm, tools=[], system_prompt=build_system_prompt())
+class AgentState(TypedDict):
+    messages: Annotated[Sequence, operator.add]
+    user_id: str
+    chat_id: str
+    emotion_context: dict | None                 
 
-    async def chat(self, history) -> str:
-        print(f"Agent received message: {history}")
+# Tools will be added here when YOU MY FRIEND finshed them :|
+TOOLS = []
 
-        response = await self.agent.ainvoke({"messages": history})
+def build_llm():
+    llm = ChatOllama(model="qwen3.5:4b", stop=["<|im_start|>", "<|im_end|>"],) 
+    return llm.bind_tools(TOOLS)
 
-        last = response["messages"][-1].content
-        if isinstance(last, list):
-            reply = " ".join(
-                block.get("text", "") if isinstance(block, dict) else str(block)
-                for block in last
-            ).strip()
-        else:
-            reply = last
 
-        print(f"Agent reply: {reply}")
-        return reply
+def agent_node(state: AgentState) -> dict:
+    """
+    Core LLM node. Receives the full message list, calls the LLM,
+    and returns the response (which may contain tool_calls).
+    """
+    llm = build_llm()
+    response = llm.invoke(state["messages"])
+    return {"messages": [response]}
 
-    async def llm_call(self, prompt: str) -> str:
-        print(f"LLM received message: {prompt}")
-        response = await self.llm.ainvoke([HumanMessage(content=prompt)])
-        print(f"LLM response: {response.content}")
-        return response.content
+
+def should_use_tools(state: AgentState) -> str:
+    """
+    Edge condition: did the LLM ask to call a tool?
+    Returns "tools" → ToolNode, or "end" → done.
+    """
+    last = state["messages"][-1]
+    if hasattr(last, "tool_calls") and last.tool_calls:
+        return "tools"
+    return "end"
+
+
+def build_graph() -> object:
+    tool_node = ToolNode(TOOLS)
+
+    graph = StateGraph(AgentState)
+    graph.add_node("agent", agent_node)
+    graph.add_node("tools", tool_node)
+
+    graph.set_entry_point("agent")
+
+    graph.add_conditional_edges(
+        "agent",
+        should_use_tools,
+        {"tools": "tools", "end": END},
+    )
+
+    graph.add_edge("tools", "agent")
+
+    return graph.compile()
+
+
+GRAPH = build_graph()
