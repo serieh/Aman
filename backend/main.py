@@ -35,7 +35,6 @@ async def send_message(
     current_user: str,
     pool = Depends(get_pool),
 ):
-    # Ownership check
     # chat = await get_chat(pool, chat_id)
     # if chat["user_id"] != current_user["user_id"]:
     #     raise HTTPException(403)

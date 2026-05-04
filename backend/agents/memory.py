@@ -116,7 +116,13 @@ async def load_history(pool: asyncpg.Pool, chat_id: str) -> list:
     history = []
     for row in rows:
         if row["role"] == "user":
-            history.append(HumanMessage(content=row["content"]))
+            content = row["content"]
+
+            if row["emotional_state"]:
+                emotion = json.loads(row["emotional_state"])
+                content += f"\n[User appeared {emotion['emotion']} (confidence: {int(emotion['confidence'] * 100)}%) during this message.]"
+            history.append(HumanMessage(content=content))
+            
         elif row["role"] == "assistant":
             history.append(AIMessage(content=row["content"]))
         elif row["role"] == "system":

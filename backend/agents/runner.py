@@ -12,7 +12,7 @@ async def run_agent(
     user_id: str,
     chat_id: str,
     user_message: str,
-    emotion_context: dict | None = None,
+    # emotion_context: dict | None = None,
     safety_flag: str | None = None,
 ) -> str:
 
@@ -28,23 +28,26 @@ async def run_agent(
         "messages": messages,
         "user_id": user_id,
         "chat_id": chat_id,
-        "emotion_context": emotion_context,
+        # "emotion_context": emotion_context,
     })
 
-    agent_reply = result["messages"][-1].content
+    response = result.get("response") or {}
 
     await save_message(
         pool, chat_id,
         role="user",
         content=user_message,
-        emotional_state=emotion_context,
-        safety_flag=safety_flag,
+        emotional_state=response.get("emotional_state", dict()),
+        safety_flag= safety_flag,
     )
+
+    cleaned_response = (response.get("content", "")).replace("\n", " ")
+
     await save_message(
         pool, chat_id,
         role="assistant",
-        content=agent_reply,
+        content=cleaned_response,
     )
     await update_chat_modify_date(pool, chat_id)
 
-    return agent_reply
+    return cleaned_response
