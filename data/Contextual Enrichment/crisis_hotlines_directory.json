@@ -1,0 +1,1341 @@
+{
+  "_metadata": {
+    "file_name": "crisis_hotlines_directory.json",
+    "description": "Complete Crisis Hotline & Mental Health Support Directory for all Arab League countries and international organizations. Intended for use in the Aman RAG knowledge base.",
+    "project": "Aman - Arabic/English Emotional Wellness Support Agent",
+    "last_verified": "2025-04-21",
+    "primary_sources": [
+      "wojodiamal.org/hotline",
+      "WHO EMRO Mental Health Platform (emro.who.int/mhps)",
+      "findahelpline.com",
+      "icarewellbeing.com",
+      "iasp.info"
+    ],
+    "important_notice": "Hotline numbers are subject to change. Always verify before deployment. Some countries have limited or no formal mental health hotlines — alternative emergency contacts are provided in those cases.",
+    "rag_usage_notes": {
+      "retrieval_strategy": "Use metadata fields (country_code, language, availability, topics) for filtered retrieval. Prioritize entries where crisis_level = 'high' when emotional risk signals are detected.",
+      "chunk_recommendation": "Each country object should be stored as a single retrievable chunk with all its hotlines. Do NOT split individual hotline numbers into separate chunks.",
+      "trigger_keywords": ["أريد الانتحار", "أريد الموت", "لا أستطيع الاستمرار", "suicide", "self-harm", "crisis", "kill myself", "end my life", "hotline", "خط نجدة", "مساعدة نفسية"]
+    }
+  },
+
+  "arab_countries": [
+
+    {
+      "country": "Saudi Arabia",
+      "country_arabic": "المملكة العربية السعودية",
+      "country_code": "SA",
+      "iso_alpha2": "SA",
+      "region": "Gulf",
+      "emergency_number": "911",
+      "ambulance": "997",
+      "hotlines": [
+        {
+          "id": "SA-001",
+          "name": "National Center for Mental Health Promotion – Psychological Counseling Helpline",
+          "name_arabic": "المركز الوطني لتعزيز الصحة النفسية – خط الإرشاد النفسي",
+          "number": "+966920033360",
+          "short_number": "920033360",
+          "type": "mental_health",
+          "operator": "National Center for Mental Health Promotion (NCMHP)",
+          "languages": ["Arabic"],
+          "availability": "Sunday–Thursday, 09:00–15:00",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["mental_health", "psychological_counseling", "suicide_prevention"],
+          "method": ["phone"],
+          "notes": "Primary government mental health helpline for KSA. Available during business hours only."
+        },
+        {
+          "id": "SA-002",
+          "name": "National Social Care Helpline",
+          "name_arabic": "خط مساندة للرعاية الاجتماعية",
+          "number": "1919",
+          "short_number": "1919",
+          "type": "social_welfare",
+          "operator": "Ministry of Human Resources and Social Development",
+          "languages": ["Arabic"],
+          "availability": "24/7",
+          "is_24_7": true,
+          "is_free": true,
+          "topics": ["domestic_violence", "child_abuse", "social_welfare", "family_crisis"],
+          "method": ["phone"],
+          "notes": "Social welfare crisis line. Can be used for family crises, violence, and general distress."
+        },
+        {
+          "id": "SA-003",
+          "name": "Child Protection Hotline",
+          "name_arabic": "خط حماية الطفل",
+          "number": "116",
+          "short_number": "116",
+          "type": "child_protection",
+          "operator": "National Family Safety Program",
+          "languages": ["Arabic"],
+          "availability": "24/7",
+          "is_24_7": true,
+          "is_free": true,
+          "topics": ["child_abuse", "child_protection", "family_crisis"],
+          "method": ["phone"],
+          "notes": "Dedicated child protection and abuse reporting line."
+        },
+        {
+          "id": "SA-004",
+          "name": "Ministry of Health General Hotline",
+          "name_arabic": "خط وزارة الصحة",
+          "number": "937",
+          "short_number": "937",
+          "type": "general_health",
+          "operator": "Ministry of Health",
+          "languages": ["Arabic", "English"],
+          "availability": "24/7",
+          "is_24_7": true,
+          "is_free": true,
+          "topics": ["general_health", "mental_health_referral", "medical_information"],
+          "method": ["phone"],
+          "notes": "General health hotline that can provide mental health referrals."
+        }
+      ],
+      "online_resources": [
+        {
+          "name": "Tumani – Saudi Mental Health Awareness Portal",
+          "name_arabic": "طمني",
+          "url": "https://tumani.sa",
+          "language": ["Arabic"],
+          "type": "awareness_portal"
+        },
+        {
+          "name": "National Center for Mental Health Promotion",
+          "url": "https://ncmhp.moh.gov.sa",
+          "language": ["Arabic"],
+          "type": "official_government"
+        }
+      ]
+    },
+
+    {
+      "country": "Lebanon",
+      "country_arabic": "لبنان",
+      "country_code": "LB",
+      "iso_alpha2": "LB",
+      "region": "Levant",
+      "emergency_number": "112",
+      "ambulance": "140",
+      "hotlines": [
+        {
+          "id": "LB-001",
+          "name": "Embrace Lifeline – National Suicide Prevention Hotline",
+          "name_arabic": "خط الحياة – احتضان",
+          "number": "1564",
+          "short_number": "1564",
+          "type": "suicide_prevention",
+          "operator": "Embrace – Lebanon",
+          "languages": ["Arabic", "English", "French"],
+          "availability": "24/7",
+          "is_24_7": true,
+          "is_free": true,
+          "topics": ["suicide_prevention", "mental_health", "crisis_intervention", "emotional_support"],
+          "method": ["phone"],
+          "notes": "Lebanon's primary suicide prevention and crisis intervention hotline. One of the most established mental health helplines in the Arab world. Also serves Arabic-speaking diaspora."
+        },
+        {
+          "id": "LB-002",
+          "name": "IDRAAC Mental Health Line",
+          "name_arabic": "معهد الشؤون الاجتماعية",
+          "number": "+961 1 538 383",
+          "type": "mental_health",
+          "operator": "Institute for Development Research Advocacy and Applied Care (IDRAAC)",
+          "languages": ["Arabic", "English", "French"],
+          "availability": "Business hours",
+          "is_24_7": false,
+          "is_free": false,
+          "topics": ["mental_health", "counseling", "therapy_referral"],
+          "method": ["phone"],
+          "notes": "Professional mental health support and referral service."
+        }
+      ],
+      "online_resources": [
+        {
+          "name": "Embrace Lebanon",
+          "url": "https://embracelebanon.org",
+          "language": ["Arabic", "English"],
+          "type": "ngo_crisis_support"
+        }
+      ]
+    },
+
+    {
+      "country": "Egypt",
+      "country_arabic": "مصر",
+      "country_code": "EG",
+      "iso_alpha2": "EG",
+      "region": "North Africa",
+      "emergency_number": "123",
+      "ambulance": "123",
+      "hotlines": [
+        {
+          "id": "EG-001",
+          "name": "Egypt Suicide Prevention Hotline",
+          "name_arabic": "خط منع الانتحار",
+          "number": "+20 762 1602",
+          "type": "suicide_prevention",
+          "operator": "Egyptian Association for Mental Health",
+          "languages": ["Arabic"],
+          "availability": "Business hours",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["suicide_prevention", "crisis_intervention"],
+          "method": ["phone"],
+          "notes": "Primary suicide prevention contact for Egypt."
+        },
+        {
+          "id": "EG-002",
+          "name": "Ministry of Health Mental Health Hotline",
+          "name_arabic": "خط وزارة الصحة للصحة النفسية",
+          "number": "08008880700",
+          "type": "mental_health",
+          "operator": "Ministry of Health and Population – Egypt",
+          "languages": ["Arabic"],
+          "availability": "24/7",
+          "is_24_7": true,
+          "is_free": true,
+          "topics": ["mental_health", "psychological_support", "counseling"],
+          "method": ["phone"],
+          "notes": "Free national mental health support line run by the Egyptian Ministry of Health."
+        },
+        {
+          "id": "EG-003",
+          "name": "National Council for Women Hotline",
+          "name_arabic": "المجلس القومي للمرأة",
+          "number": "15115",
+          "type": "domestic_violence",
+          "operator": "National Council for Women – Egypt",
+          "languages": ["Arabic"],
+          "availability": "24/7",
+          "is_24_7": true,
+          "is_free": true,
+          "topics": ["domestic_violence", "gender_based_violence", "women_support"],
+          "method": ["phone"],
+          "notes": "Support line for women facing violence or crisis."
+        }
+      ],
+      "online_resources": [
+        {
+          "name": "UNHCR Egypt Mental Health Services",
+          "url": "https://help.unhcr.org/egypt/en/health-services/mental-health/",
+          "language": ["Arabic", "English"],
+          "type": "refugee_support"
+        }
+      ]
+    },
+
+    {
+      "country": "Jordan",
+      "country_arabic": "الأردن",
+      "country_code": "JO",
+      "iso_alpha2": "JO",
+      "region": "Levant",
+      "emergency_number": "911",
+      "ambulance": "911",
+      "hotlines": [
+        {
+          "id": "JO-001",
+          "name": "JCPA Suicide and Crisis Line",
+          "name_arabic": "خط الأزمات للجمعية الأردنية لتعزيز الصحة النفسية",
+          "number": "+962 7 9544 0416",
+          "type": "suicide_prevention",
+          "operator": "Jordan Counseling and Psychotherapy Association (JCPA)",
+          "languages": ["Arabic", "English"],
+          "availability": "Business hours",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["suicide_prevention", "crisis_intervention", "counseling"],
+          "method": ["phone"],
+          "notes": "Primary crisis intervention line for Jordan."
+        },
+        {
+          "id": "JO-002",
+          "name": "Jordan Family Protection Department",
+          "name_arabic": "إدارة حماية الأسرة",
+          "number": "110",
+          "short_number": "110",
+          "type": "social_welfare",
+          "operator": "Public Security Directorate – Jordan",
+          "languages": ["Arabic"],
+          "availability": "24/7",
+          "is_24_7": true,
+          "is_free": true,
+          "topics": ["domestic_violence", "child_abuse", "family_crisis"],
+          "method": ["phone"],
+          "notes": "Family protection, domestic violence, and child abuse reporting."
+        }
+      ],
+      "online_resources": [
+        {
+          "name": "Jordan Mental Health Commission",
+          "url": "https://moh.gov.jo",
+          "language": ["Arabic"],
+          "type": "official_government"
+        }
+      ]
+    },
+
+    {
+      "country": "United Arab Emirates",
+      "country_arabic": "الإمارات العربية المتحدة",
+      "country_code": "AE",
+      "iso_alpha2": "AE",
+      "region": "Gulf",
+      "emergency_number": "999",
+      "ambulance": "998",
+      "hotlines": [
+        {
+          "id": "AE-001",
+          "name": "National Mental Support Line – MOHAP",
+          "name_arabic": "خط الدعم النفسي الوطني – وزارة الصحة",
+          "number": "+971 800 4673",
+          "short_number": "800 HOPE",
+          "type": "mental_health",
+          "operator": "UAE Ministry of Health and Prevention (MOHAP)",
+          "languages": ["Arabic", "English"],
+          "availability": "24/7",
+          "is_24_7": true,
+          "is_free": true,
+          "topics": ["mental_health", "emotional_support", "suicide_prevention", "crisis_intervention"],
+          "method": ["phone"],
+          "notes": "Main government mental health support line. Number spells 'HOPE' on keypad."
+        },
+        {
+          "id": "AE-002",
+          "name": "Community Development Authority Helpline",
+          "name_arabic": "خط دائرة تنمية المجتمع",
+          "number": "800 2626",
+          "type": "social_welfare",
+          "operator": "Community Development Authority – Dubai",
+          "languages": ["Arabic", "English"],
+          "availability": "24/7",
+          "is_24_7": true,
+          "is_free": true,
+          "topics": ["social_welfare", "family_crisis", "domestic_violence", "child_protection"],
+          "method": ["phone"],
+          "notes": "Dubai social welfare and family protection hotline."
+        },
+        {
+          "id": "AE-003",
+          "name": "RAK Hospital Psychological Support Helpline",
+          "name_arabic": "خط الدعم النفسي – مستشفى رأس الخيمة",
+          "number": "+971 7 207 4444",
+          "type": "mental_health",
+          "operator": "RAK Hospital – Ras Al Khaimah",
+          "languages": ["Arabic", "English"],
+          "availability": "10:00–16:00 daily",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["mental_health", "psychological_support", "counseling"],
+          "method": ["phone"],
+          "notes": "Staffed by clinical psychologists."
+        }
+      ],
+      "online_resources": [
+        {
+          "name": "The Lighthouse Dubai",
+          "url": "https://thelighthousearabia.com",
+          "language": ["Arabic", "English"],
+          "type": "mental_health_clinic"
+        }
+      ]
+    },
+
+    {
+      "country": "Qatar",
+      "country_arabic": "قطر",
+      "country_code": "QA",
+      "iso_alpha2": "QA",
+      "region": "Gulf",
+      "emergency_number": "999",
+      "ambulance": "999",
+      "hotlines": [
+        {
+          "id": "QA-001",
+          "name": "National Mental Health Helpline",
+          "name_arabic": "خط مساعدة الصحة النفسية الوطني",
+          "number": "16000",
+          "short_number": "16000",
+          "type": "mental_health",
+          "operator": "Hamad Medical Corporation",
+          "languages": ["Arabic", "English"],
+          "availability": "24/7",
+          "is_24_7": true,
+          "is_free": true,
+          "topics": ["mental_health", "suicide_prevention", "crisis_intervention", "counseling"],
+          "method": ["phone"],
+          "notes": "Qatar's primary mental health helpline, operated by the national healthcare provider."
+        },
+        {
+          "id": "QA-002",
+          "name": "Ministry of Health National Hotline",
+          "name_arabic": "الخط الساخن لوزارة الصحة",
+          "number": "08008888800",
+          "type": "general_health",
+          "operator": "Ministry of Public Health – Qatar",
+          "languages": ["Arabic", "English"],
+          "availability": "24/7",
+          "is_24_7": true,
+          "is_free": true,
+          "topics": ["general_health", "mental_health_referral"],
+          "method": ["phone"],
+          "notes": "General health hotline with mental health referral capability."
+        }
+      ],
+      "online_resources": []
+    },
+
+    {
+      "country": "Kuwait",
+      "country_arabic": "الكويت",
+      "country_code": "KW",
+      "iso_alpha2": "KW",
+      "region": "Gulf",
+      "emergency_number": "112",
+      "ambulance": "112",
+      "hotlines": [
+        {
+          "id": "KW-001",
+          "name": "Kuwait Psychological Medicine Hospital",
+          "name_arabic": "مستشفى الطب النفسي الكويت",
+          "number": "+965 2462 2000",
+          "type": "mental_health",
+          "operator": "Kuwait Ministry of Health – Psychological Medicine Hospital",
+          "languages": ["Arabic", "English"],
+          "availability": "24/7",
+          "is_24_7": true,
+          "is_free": true,
+          "topics": ["mental_health", "psychiatric_emergency", "crisis_intervention"],
+          "method": ["phone"],
+          "notes": "Main psychiatric emergency and mental health contact for Kuwait."
+        },
+        {
+          "id": "KW-002",
+          "name": "Social Care Hotline",
+          "name_arabic": "خط الرعاية الاجتماعية",
+          "number": "94005050",
+          "type": "social_welfare",
+          "operator": "Ministry of Social Affairs – Kuwait",
+          "languages": ["Arabic"],
+          "availability": "Business hours",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["social_welfare", "family_crisis", "domestic_violence"],
+          "method": ["phone"],
+          "notes": "Social affairs support line."
+        }
+      ],
+      "online_resources": []
+    },
+
+    {
+      "country": "Bahrain",
+      "country_arabic": "البحرين",
+      "country_code": "BH",
+      "iso_alpha2": "BH",
+      "region": "Gulf",
+      "emergency_number": "999",
+      "ambulance": "999",
+      "hotlines": [
+        {
+          "id": "BH-001",
+          "name": "Ministry of Health Psychiatric Services",
+          "name_arabic": "خدمات الطب النفسي – وزارة الصحة",
+          "number": "+973 17 255 555",
+          "type": "mental_health",
+          "operator": "Bahrain Ministry of Health – Psychiatric Hospital",
+          "languages": ["Arabic", "English"],
+          "availability": "24/7",
+          "is_24_7": true,
+          "is_free": true,
+          "topics": ["mental_health", "psychiatric_emergency", "crisis_intervention"],
+          "method": ["phone"],
+          "notes": "Bahrain's national psychiatric hospital direct line."
+        },
+        {
+          "id": "BH-002",
+          "name": "Bahrain Child Safety Campaign Hotline",
+          "name_arabic": "خط حماية الطفل",
+          "number": "998",
+          "short_number": "998",
+          "type": "child_protection",
+          "operator": "Supreme Council for Women – Bahrain",
+          "languages": ["Arabic"],
+          "availability": "24/7",
+          "is_24_7": true,
+          "is_free": true,
+          "topics": ["child_abuse", "domestic_violence", "women_support"],
+          "method": ["phone"],
+          "notes": "Domestic violence and child protection line."
+        }
+      ],
+      "online_resources": []
+    },
+
+    {
+      "country": "Oman",
+      "country_arabic": "عُمان",
+      "country_code": "OM",
+      "iso_alpha2": "OM",
+      "region": "Gulf",
+      "emergency_number": "9999",
+      "ambulance": "9999",
+      "hotlines": [
+        {
+          "id": "OM-001",
+          "name": "Ministry of Health – Mental Health Department",
+          "name_arabic": "وزارة الصحة – قسم الصحة النفسية",
+          "number": "+968 24 603 552",
+          "type": "mental_health",
+          "operator": "Oman Ministry of Health",
+          "languages": ["Arabic", "English"],
+          "availability": "Business hours",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["mental_health", "psychiatric_services", "counseling"],
+          "method": ["phone"],
+          "notes": "Official mental health department contact for Oman."
+        },
+        {
+          "id": "OM-002",
+          "name": "National Committee for Narcotics Affairs Helpline",
+          "name_arabic": "خط اللجنة الوطنية لشؤون المخدرات",
+          "number": "+968 99345209",
+          "type": "substance_use",
+          "operator": "National Committee for Narcotics and Psychotropic Substance Affairs",
+          "languages": ["Arabic"],
+          "availability": "Business hours",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["substance_abuse", "addiction", "mental_health"],
+          "method": ["phone"],
+          "notes": "Support for substance use and addiction issues."
+        }
+      ],
+      "online_resources": []
+    },
+
+    {
+      "country": "Iraq",
+      "country_arabic": "العراق",
+      "country_code": "IQ",
+      "iso_alpha2": "IQ",
+      "region": "Levant",
+      "emergency_number": "104",
+      "ambulance": "115",
+      "hotlines": [
+        {
+          "id": "IQ-001",
+          "name": "Ministry of Health Mental Health & Psychosocial Support Hotline",
+          "name_arabic": "خط وزارة الصحة للدعم النفسي والاجتماعي",
+          "number": "122",
+          "short_number": "122",
+          "type": "mental_health",
+          "operator": "Iraqi Ministry of Health",
+          "languages": ["Arabic", "Kurdish"],
+          "availability": "24/7",
+          "is_24_7": true,
+          "is_free": true,
+          "topics": ["mental_health", "psychosocial_support", "crisis_intervention"],
+          "method": ["phone"],
+          "notes": "Nationwide line available in Arabic and Kurdish."
+        },
+        {
+          "id": "IQ-002",
+          "name": "DCVAW – Violence Against Women Hotline",
+          "name_arabic": "دليل مكافحة العنف ضد المرأة",
+          "number": "119",
+          "short_number": "119",
+          "type": "domestic_violence",
+          "operator": "Iraqi Ministry of Interior",
+          "languages": ["Arabic", "Kurdish"],
+          "availability": "24/7",
+          "is_24_7": true,
+          "is_free": true,
+          "topics": ["domestic_violence", "gender_based_violence", "mental_health_referral"],
+          "method": ["phone"],
+          "notes": "Addresses violence against women; provides referrals for psychosocial support."
+        },
+        {
+          "id": "IQ-003",
+          "name": "SEMA Foundation for Mental Health",
+          "name_arabic": "مؤسسة سيما للصحة النفسية",
+          "number": "+964 750 309 6649",
+          "type": "mental_health",
+          "operator": "SEMA Foundation (NGO)",
+          "languages": ["Arabic", "Kurdish"],
+          "availability": "09:00–18:00 daily",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["mental_health", "counseling", "trauma_support", "psychosocial_support"],
+          "method": ["phone"],
+          "notes": "NGO providing mental health support, especially for trauma and conflict-affected individuals."
+        }
+      ],
+      "online_resources": []
+    },
+
+    {
+      "country": "Syria",
+      "country_arabic": "سوريا",
+      "country_code": "SY",
+      "iso_alpha2": "SY",
+      "region": "Levant",
+      "emergency_number": "110",
+      "ambulance": "110",
+      "hotlines": [
+        {
+          "id": "SY-001",
+          "name": "Syria Mental Health Helpline – Syrian Arab Red Crescent",
+          "name_arabic": "خط الصحة النفسية – الهلال الأحمر العربي السوري",
+          "number": "+963 944 868 444",
+          "type": "mental_health",
+          "operator": "Syrian Arab Red Crescent (SARC)",
+          "languages": ["Arabic"],
+          "availability": "Business hours",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["mental_health", "trauma_support", "psychosocial_support", "crisis_intervention"],
+          "method": ["phone"],
+          "notes": "Operated by the Red Crescent; focuses on trauma and conflict-related mental health."
+        }
+      ],
+      "online_resources": [
+        {
+          "name": "UNHCR Syria Mental Health Resources",
+          "url": "https://help.unhcr.org/syria",
+          "language": ["Arabic"],
+          "type": "refugee_support"
+        }
+      ]
+    },
+
+    {
+      "country": "Palestine",
+      "country_arabic": "فلسطين",
+      "country_code": "PS",
+      "iso_alpha2": "PS",
+      "region": "Levant",
+      "emergency_number": "101",
+      "ambulance": "101",
+      "hotlines": [
+        {
+          "id": "PS-001",
+          "name": "Gaza Community Mental Health Programme",
+          "name_arabic": "برنامج غزة للصحة النفسية المجتمعية",
+          "number": "+972 8 282 6603",
+          "type": "mental_health",
+          "operator": "Gaza Community Mental Health Programme (GCMHP)",
+          "languages": ["Arabic"],
+          "availability": "Business hours (subject to conditions)",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["mental_health", "trauma_support", "psychosocial_support"],
+          "method": ["phone"],
+          "notes": "Availability may vary due to conflict conditions. GCMHP is a leading Palestinian mental health NGO."
+        },
+        {
+          "id": "PS-002",
+          "name": "ICRC Palestine – Emergency Psychosocial Support",
+          "name_arabic": "اللجنة الدولية للصليب الأحمر – فلسطين",
+          "number": "+972 2 582 8800",
+          "email": "jerusalem.jer@icrc.org",
+          "type": "humanitarian_crisis",
+          "operator": "International Committee of the Red Cross (ICRC)",
+          "languages": ["Arabic", "English"],
+          "availability": "Business hours",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["crisis_intervention", "trauma_support", "humanitarian_assistance"],
+          "method": ["phone", "email"],
+          "notes": "ICRC provides psychosocial support in conflict zones."
+        },
+        {
+          "id": "PS-003",
+          "name": "UNICEF Palestine Mental Health Support",
+          "name_arabic": "اليونيسف – الصحة النفسية في فلسطين",
+          "number": "+972 2 584 9550",
+          "type": "child_mental_health",
+          "operator": "UNICEF Palestine",
+          "languages": ["Arabic", "English"],
+          "availability": "Business hours",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["child_mental_health", "trauma_support", "humanitarian_assistance"],
+          "method": ["phone"],
+          "notes": "Focuses on mental health support for children and families."
+        }
+      ],
+      "online_resources": []
+    },
+
+    {
+      "country": "Morocco",
+      "country_arabic": "المغرب",
+      "country_code": "MA",
+      "iso_alpha2": "MA",
+      "region": "North Africa",
+      "emergency_number": "15",
+      "ambulance": "15",
+      "hotlines": [
+        {
+          "id": "MA-001",
+          "name": "Moroccan Society of Psychiatry – Mental Health Assistance",
+          "name_arabic": "الجمعية المغربية للطب النفسي",
+          "number": "+212 537 77 11 66",
+          "type": "mental_health",
+          "operator": "Moroccan Society of Psychiatry",
+          "languages": ["Arabic", "French"],
+          "availability": "Business hours",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["mental_health", "psychiatric_services", "counseling"],
+          "method": ["phone"],
+          "notes": "Professional psychiatric consultation line."
+        },
+        {
+          "id": "MA-002",
+          "name": "Moroccan Association for Listening and Psychological Support",
+          "name_arabic": "الجمعية المغربية للإنصات والمساعدة النفسية",
+          "number": "0800 004 747",
+          "type": "mental_health",
+          "operator": "Moroccan NGO for Mental Health",
+          "languages": ["Arabic", "French", "Darija"],
+          "availability": "24/7",
+          "is_24_7": true,
+          "is_free": true,
+          "topics": ["mental_health", "emotional_support", "crisis_intervention"],
+          "method": ["phone"],
+          "notes": "Free 24/7 listening and psychological support line."
+        },
+        {
+          "id": "MA-003",
+          "name": "Mental Health and Psychosocial Support Line",
+          "name_arabic": "خط الدعم النفسي الاجتماعي",
+          "number": "+212 522 548 526",
+          "type": "mental_health",
+          "operator": "Clinical Psychologists – Morocco",
+          "languages": ["Arabic", "French"],
+          "availability": "Business hours",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["mental_health", "counseling", "psychosocial_support"],
+          "method": ["phone"],
+          "notes": "Support hotline for individuals in mental distress."
+        }
+      ],
+      "online_resources": []
+    },
+
+    {
+      "country": "Tunisia",
+      "country_arabic": "تونس",
+      "country_code": "TN",
+      "iso_alpha2": "TN",
+      "region": "North Africa",
+      "emergency_number": "197",
+      "ambulance": "190",
+      "hotlines": [
+        {
+          "id": "TN-001",
+          "name": "Tunisian Association for Suicide Prevention",
+          "name_arabic": "الجمعية التونسية للوقاية من الانتحار",
+          "number": "+216 8010 3666",
+          "type": "suicide_prevention",
+          "operator": "Tunisian Association for Suicide Prevention",
+          "languages": ["Arabic", "French"],
+          "availability": "Business hours",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["suicide_prevention", "crisis_intervention", "mental_health"],
+          "method": ["phone"],
+          "notes": "Primary suicide prevention line for Tunisia."
+        },
+        {
+          "id": "TN-002",
+          "name": "Tunisian Association for the Defense of Mental Health",
+          "name_arabic": "الجمعية التونسية للدفاع عن الصحة النفسية",
+          "number": "71 335 800",
+          "type": "mental_health",
+          "operator": "Tunisian Association for the Defense of Mental Health",
+          "languages": ["Arabic", "French"],
+          "availability": "09:00–17:00 weekdays",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["mental_health", "counseling", "advocacy"],
+          "method": ["phone"],
+          "notes": "Mental health support and advocacy."
+        },
+        {
+          "id": "TN-003",
+          "name": "CAP – Psychological Assistance for Disaster Victims",
+          "name_arabic": "خلية المساعدة النفسية لضحايا الكوارث",
+          "number": "+216 80 105 050",
+          "type": "crisis_intervention",
+          "operator": "Tunisian Ministry of Health – Volunteer Psychiatrists and Psychologists",
+          "languages": ["Arabic", "French"],
+          "availability": "Crisis periods",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["disaster_mental_health", "crisis_intervention", "trauma_support"],
+          "method": ["phone"],
+          "notes": "Staffed by 200+ volunteer psychiatrists and psychologists from across Tunisia."
+        }
+      ],
+      "online_resources": []
+    },
+
+    {
+      "country": "Algeria",
+      "country_arabic": "الجزائر",
+      "country_code": "DZ",
+      "iso_alpha2": "DZ",
+      "region": "North Africa",
+      "emergency_number": "14",
+      "ambulance": "14",
+      "hotlines": [
+        {
+          "id": "DZ-001",
+          "name": "Algerian Association for Listening and Psychological Support",
+          "name_arabic": "الجمعية الجزائرية للإنصات والمساعدة النفسية",
+          "number": "+213 21 71 69 19",
+          "type": "mental_health",
+          "operator": "Algerian NGO for Mental Health",
+          "languages": ["Arabic", "French"],
+          "availability": "09:00–17:00 weekdays",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["mental_health", "emotional_support", "counseling"],
+          "method": ["phone"],
+          "notes": "Main psychological support line in Algeria."
+        },
+        {
+          "id": "DZ-002",
+          "name": "Association for Addiction Medicine Helpline",
+          "name_arabic": "خط جمعية أطباء الإدمان",
+          "number": "+213 66 035 816",
+          "type": "substance_use",
+          "operator": "Association of Doctors in Addictology – Algeria",
+          "languages": ["Arabic", "French"],
+          "availability": "Business hours",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["substance_abuse", "addiction", "mental_health"],
+          "method": ["phone"],
+          "notes": "Specialized support for substance use and addiction."
+        }
+      ],
+      "online_resources": []
+    },
+
+    {
+      "country": "Libya",
+      "country_arabic": "ليبيا",
+      "country_code": "LY",
+      "iso_alpha2": "LY",
+      "region": "North Africa",
+      "emergency_number": "1515",
+      "ambulance": "1515",
+      "hotlines": [
+        {
+          "id": "LY-001",
+          "name": "Libyan Psychosocial Support Hotline",
+          "name_arabic": "خط الدعم النفسي الاجتماعي الليبي",
+          "number": "1417",
+          "short_number": "1417",
+          "type": "mental_health",
+          "operator": "Libyan Psychosocial Support Team – WHO-supported",
+          "languages": ["Arabic"],
+          "availability": "09:00–21:00 daily (except Fridays)",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["mental_health", "psychosocial_support", "crisis_intervention"],
+          "method": ["phone"],
+          "notes": "Team of 6 psychologists. Operational during listed hours."
+        },
+        {
+          "id": "LY-002",
+          "name": "National Centre for Disease Control – Psychosocial Support Line",
+          "name_arabic": "المركز الوطني لمكافحة الأمراض – خط الدعم النفسي",
+          "number": "195",
+          "short_number": "195",
+          "type": "general_health",
+          "operator": "National Centre for Disease Control – Libya",
+          "languages": ["Arabic"],
+          "availability": "Business hours",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["general_health", "psychosocial_support"],
+          "method": ["phone"],
+          "notes": "General national health number with psychosocial support capability."
+        },
+        {
+          "id": "LY-003",
+          "name": "Arrazi Psychiatric Hospital",
+          "name_arabic": "مستشفى الرازي للأمراض النفسية",
+          "number": "+218 21 478 1712",
+          "alt_number": "+218 21 478 1711",
+          "type": "psychiatric_hospital",
+          "operator": "Arrazi Psychiatric Hospital – Tripoli",
+          "languages": ["Arabic"],
+          "availability": "09:00–13:00 daily",
+          "is_24_7": false,
+          "is_free": false,
+          "topics": ["mental_health", "psychiatric_services"],
+          "method": ["phone"],
+          "notes": "Phone consultations available in morning hours."
+        }
+      ],
+      "online_resources": []
+    },
+
+    {
+      "country": "Sudan",
+      "country_arabic": "السودان",
+      "country_code": "SD",
+      "iso_alpha2": "SD",
+      "region": "North Africa",
+      "emergency_number": "999",
+      "ambulance": "999",
+      "hotlines": [
+        {
+          "id": "SD-001",
+          "name": "Sudan Ministry of Health – Mental Health Division",
+          "name_arabic": "وزارة الصحة السودانية – وحدة الصحة النفسية",
+          "number": "+249 183 779 522",
+          "type": "mental_health",
+          "operator": "Federal Ministry of Health – Sudan",
+          "languages": ["Arabic"],
+          "availability": "Business hours",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["mental_health", "psychiatric_services", "counseling"],
+          "method": ["phone"],
+          "notes": "Note: Availability may be disrupted due to ongoing conflict. Contact UNHCR or WHO EMRO as alternatives."
+        },
+        {
+          "id": "SD-002",
+          "name": "UNHCR Sudan – Psychosocial Support",
+          "name_arabic": "مفوضية اللاجئين – الدعم النفسي السودان",
+          "number": "NA",
+          "type": "humanitarian_crisis",
+          "operator": "UNHCR Sudan",
+          "languages": ["Arabic", "English"],
+          "availability": "Business hours",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["refugee_mental_health", "trauma_support", "psychosocial_support"],
+          "method": ["website"],
+          "url": "https://help.unhcr.org/sudan",
+          "notes": "Critical resource given ongoing conflict. Physical access may be required."
+        }
+      ],
+      "online_resources": [
+        {
+          "name": "WHO Sudan Mental Health Emergency Response",
+          "url": "https://www.emro.who.int/sdn/",
+          "language": ["Arabic", "English"],
+          "type": "humanitarian_response"
+        }
+      ]
+    },
+
+    {
+      "country": "Yemen",
+      "country_arabic": "اليمن",
+      "country_code": "YE",
+      "iso_alpha2": "YE",
+      "region": "Arabian Peninsula",
+      "emergency_number": "911",
+      "ambulance": "191",
+      "hotlines": [
+        {
+          "id": "YE-001",
+          "name": "Ministry of Public Health – Mental Health Services Helpline",
+          "name_arabic": "وزارة الصحة العامة – خط خدمات الصحة النفسية",
+          "number": "+967 1 250 600",
+          "type": "mental_health",
+          "operator": "Yemen Ministry of Public Health and Population",
+          "languages": ["Arabic"],
+          "availability": "08:00–16:00, Monday–Thursday",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["mental_health", "psychiatric_services", "counseling"],
+          "method": ["phone"],
+          "notes": "Hours limited due to conflict. Availability may vary."
+        }
+      ],
+      "online_resources": [
+        {
+          "name": "WHO Yemen Mental Health Support",
+          "url": "https://www.emro.who.int/yem/",
+          "language": ["Arabic", "English"],
+          "type": "humanitarian_response"
+        }
+      ]
+    },
+
+    {
+      "country": "Mauritania",
+      "country_arabic": "موريتانيا",
+      "country_code": "MR",
+      "iso_alpha2": "MR",
+      "region": "North Africa",
+      "emergency_number": "17",
+      "ambulance": "1515",
+      "hotlines": [
+        {
+          "id": "MR-001",
+          "name": "Emergency Psychiatric Services – National Hospital",
+          "name_arabic": "خدمات الطوارئ النفسية – المستشفى الوطني",
+          "number": "+222 45 25 21 60",
+          "type": "psychiatric_hospital",
+          "operator": "Centre National Hospitalier de Nouakchott",
+          "languages": ["Arabic", "French"],
+          "availability": "Business hours",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["mental_health", "psychiatric_emergency"],
+          "method": ["phone"],
+          "notes": "Limited formal mental health infrastructure. The national hospital is the primary psychiatric resource."
+        }
+      ],
+      "online_resources": []
+    },
+
+    {
+      "country": "Somalia",
+      "country_arabic": "الصومال",
+      "country_code": "SO",
+      "iso_alpha2": "SO",
+      "region": "East Africa",
+      "emergency_number": "888",
+      "ambulance": "888",
+      "hotlines": [
+        {
+          "id": "SO-001",
+          "name": "WHO Somalia – Mental Health and Psychosocial Support",
+          "name_arabic": "منظمة الصحة العالمية – الصومال",
+          "number": "NA",
+          "type": "humanitarian_crisis",
+          "operator": "WHO Somalia Country Office",
+          "languages": ["Arabic", "Somali", "English"],
+          "availability": "Business hours",
+          "is_24_7": false,
+          "is_free": true,
+          "topics": ["mental_health", "psychosocial_support", "humanitarian_assistance"],
+          "method": ["website"],
+          "url": "https://www.emro.who.int/som/",
+          "notes": "Somalia has very limited mental health infrastructure. WHO EMRO is the primary resource."
+        }
+      ],
+      "online_resources": [
+        {
+          "name": "WHO Somalia",
+          "url": "https://www.emro.who.int/som/",
+          "language": ["English", "Arabic"],
+          "type": "humanitarian_response"
+        }
+      ]
+    },
+
+    {
+      "country": "Djibouti",
+      "country_arabic": "جيبوتي",
+      "country_code": "DJ",
+      "iso_alpha2": "DJ",
+      "region": "East Africa",
+      "emergency_number": "17",
+      "ambulance": "17",
+      "hotlines": [
+        {
+          "id": "DJ-001",
+          "name": "Hôpital Général Peltier – Psychiatric Unit",
+          "name_arabic": "وحدة الطب النفسي – مستشفى بيلتيار العام",
+          "number": "+253 21 35 15 51",
+          "type": "psychiatric_hospital",
+          "operator": "Hôpital Général Peltier – Djibouti",
+          "languages": ["Arabic", "French", "Somali"],
+          "availability": "Business hours",
+          "is_24_7": false,
+          "is_free": false,
+          "topics": ["mental_health", "psychiatric_services"],
+          "method": ["phone"],
+          "notes": "Djibouti has no formal psychiatrists. General practitioners with mental health interest manage cases here."
+        }
+      ],
+      "online_resources": []
+    },
+
+    {
+      "country": "Comoros",
+      "country_arabic": "جزر القمر",
+      "country_code": "KM",
+      "iso_alpha2": "KM",
+      "region": "East Africa",
+      "emergency_number": "17",
+      "ambulance": "773 02 40",
+      "hotlines": [
+        {
+          "id": "KM-001",
+          "name": "El Maarouf Hospital – General Emergency",
+          "name_arabic": "مستشفى المعروف – الطوارئ العامة",
+          "number": "+269 773 11 02",
+          "type": "general_emergency",
+          "operator": "Centre Hospitalier National El Maarouf",
+          "languages": ["Arabic", "French", "Comorian"],
+          "availability": "24/7",
+          "is_24_7": true,
+          "is_free": false,
+          "topics": ["general_emergency", "mental_health_referral"],
+          "method": ["phone"],
+          "notes": "No dedicated mental health hotline exists in Comoros. The national hospital is the only resource."
+        }
+      ],
+      "online_resources": []
+    }
+
+  ],
+
+  "international_organizations": [
+
+    {
+      "id": "INTL-001",
+      "name": "International Association for Suicide Prevention (IASP)",
+      "name_arabic": "الرابطة الدولية للوقاية من الانتحار",
+      "website": "https://www.iasp.info/resources/Crisis_Centres/",
+      "type": "international_ngo",
+      "languages": ["Multiple"],
+      "availability": "Online directory",
+      "topics": ["suicide_prevention", "crisis_center_directory"],
+      "description": "Global directory of crisis centers by country. Best resource for finding local hotlines in any country.",
+      "rag_priority": "high"
+    },
+
+    {
+      "id": "INTL-002",
+      "name": "Find A Helpline",
+      "name_arabic": "ابحث عن خط مساعدة",
+      "website": "https://findahelpline.com",
+      "type": "global_directory",
+      "languages": ["Multiple"],
+      "availability": "Online – 24/7",
+      "topics": ["mental_health", "suicide_prevention", "domestic_violence", "anxiety", "depression", "self_harm"],
+      "description": "Vetted global directory of 2000+ helplines. Covers all countries including Arab nations.",
+      "rag_priority": "high"
+    },
+
+    {
+      "id": "INTL-003",
+      "name": "WHO Mental Health and Psychosocial Support Platform",
+      "name_arabic": "منصة منظمة الصحة العالمية للصحة النفسية والدعم الاجتماعي",
+      "website": "https://www.emro.who.int/mhps/",
+      "type": "intergovernmental",
+      "languages": ["Arabic", "English"],
+      "availability": "Online",
+      "topics": ["mental_health", "psychosocial_support", "professional_resources"],
+      "description": "WHO EMRO regional platform specifically for Arab/Eastern Mediterranean mental health resources.",
+      "rag_priority": "high"
+    },
+
+    {
+      "id": "INTL-004",
+      "name": "Befrienders Worldwide",
+      "name_arabic": "خدمة الرفقاء العالمية",
+      "website": "https://www.befrienders.org",
+      "phone": "N/A – use website to find local center",
+      "type": "international_ngo",
+      "languages": ["Multiple"],
+      "availability": "Varies by local center",
+      "topics": ["suicide_prevention", "emotional_support", "crisis_intervention"],
+      "description": "International network of emotional support centers. Use website to find the nearest center.",
+      "rag_priority": "medium"
+    },
+
+    {
+      "id": "INTL-005",
+      "name": "Wojodi Amal – Arab Mental Health Crisis Directory",
+      "name_arabic": "وجودي أمل – دليل الأزمات النفسية العربي",
+      "website": "https://wojodiamal.org/hotline",
+      "type": "arab_ngo",
+      "languages": ["Arabic", "English"],
+      "availability": "Online – 24/7 (directory)",
+      "topics": ["suicide_prevention", "crisis_intervention", "arab_mental_health"],
+      "description": "Arabic-focused crisis hotline directory. Primary verified source for Arab country hotlines.",
+      "rag_priority": "high"
+    },
+
+    {
+      "id": "INTL-006",
+      "name": "Crisis Text Line",
+      "name_arabic": "خط رسائل الأزمات",
+      "website": "https://www.crisistextline.org",
+      "text_number": "741741 (US/Canada/UK/Ireland)",
+      "type": "text_based_crisis_line",
+      "languages": ["English"],
+      "availability": "24/7",
+      "topics": ["crisis_intervention", "suicide_prevention", "emotional_support", "self_harm"],
+      "description": "Text-based crisis support. Best for users who prefer not to call. Currently English-only.",
+      "rag_priority": "medium"
+    },
+
+    {
+      "id": "INTL-007",
+      "name": "Samaritans",
+      "name_arabic": "سامريتانز",
+      "website": "https://www.samaritans.org",
+      "phone": "116 123 (UK & Ireland – free)",
+      "email": "jo@samaritans.org",
+      "type": "international_ngo",
+      "languages": ["English"],
+      "availability": "24/7",
+      "topics": ["suicide_prevention", "emotional_support", "crisis_intervention"],
+      "description": "UK-based emotional support for anyone in distress. Available internationally via email.",
+      "rag_priority": "low"
+    },
+
+    {
+      "id": "INTL-008",
+      "name": "988 Suicide & Crisis Lifeline",
+      "name_arabic": "خط الأزمات الأمريكي 988",
+      "website": "https://988lifeline.org",
+      "phone": "988",
+      "text": "Text HOME to 741741",
+      "type": "national_us_hotline",
+      "languages": ["English", "Spanish"],
+      "availability": "24/7",
+      "topics": ["suicide_prevention", "crisis_intervention", "mental_health", "substance_use"],
+      "description": "US national crisis line. Relevant for Arabic users residing in North America.",
+      "rag_priority": "low"
+    },
+
+    {
+      "id": "INTL-009",
+      "name": "UNHCR – Psychosocial Support for Refugees",
+      "name_arabic": "المفوضية السامية للأمم المتحدة – الدعم النفسي للاجئين",
+      "website": "https://help.unhcr.org",
+      "type": "intergovernmental",
+      "languages": ["Arabic", "English", "Multiple"],
+      "availability": "Varies by country office",
+      "topics": ["refugee_mental_health", "trauma_support", "psychosocial_support", "displacement"],
+      "description": "Critical resource for refugees and displaced persons across all Arab conflict zones.",
+      "rag_priority": "high"
+    },
+
+    {
+      "id": "INTL-010",
+      "name": "IMH – International Mental Health Resource Hub",
+      "name_arabic": "مركز الموارد الدولية للصحة النفسية",
+      "website": "https://www.mentalhealth.com",
+      "type": "information_portal",
+      "languages": ["English"],
+      "availability": "Online – 24/7",
+      "topics": ["mental_health_education", "therapy_resources", "self_help"],
+      "description": "Comprehensive mental health information portal with professional resource directories.",
+      "rag_priority": "low"
+    },
+
+    {
+      "id": "INTL-011",
+      "name": "Embrace Lebanon Online Clinic",
+      "name_arabic": "عيادة احتضان الإلكترونية",
+      "website": "https://embracelebanon.org",
+      "phone": "1564 (Lebanon only)",
+      "type": "arab_ngo",
+      "languages": ["Arabic", "English", "French"],
+      "availability": "24/7 crisis line; online clinic by appointment",
+      "topics": ["mental_health", "suicide_prevention", "diaspora_support", "online_therapy"],
+      "description": "Serves Lebanese and Arabic-speaking diaspora globally. Online clinic available internationally.",
+      "rag_priority": "high"
+    }
+
+  ],
+
+  "online_platforms_arabic": [
+    {
+      "id": "PLATFORM-001",
+      "name": "Nafsi",
+      "name_arabic": "نفسي",
+      "website": "https://nafsi.ae",
+      "type": "online_therapy_platform",
+      "countries_served": ["UAE", "KSA", "Kuwait", "Bahrain", "Qatar", "Oman", "Jordan", "Egypt"],
+      "languages": ["Arabic", "English"],
+      "is_free": false,
+      "has_free_resources": true,
+      "topics": ["mental_health", "therapy", "counseling"],
+      "description": "Leading Arabic-language online therapy platform across the Gulf and Arab world."
+    },
+    {
+      "id": "PLATFORM-002",
+      "name": "Shezlong",
+      "name_arabic": "شيزلونج",
+      "website": "https://shezlong.com",
+      "type": "online_therapy_platform",
+      "countries_served": ["Egypt", "Arab world"],
+      "languages": ["Arabic"],
+      "is_free": false,
+      "has_free_resources": true,
+      "topics": ["mental_health", "therapy", "counseling"],
+      "description": "Egypt's leading online therapy platform. Arabic-first with licensed therapists."
+    },
+    {
+      "id": "PLATFORM-003",
+      "name": "Tumani",
+      "name_arabic": "طمني",
+      "website": "https://tumani.sa",
+      "type": "awareness_portal",
+      "countries_served": ["KSA"],
+      "languages": ["Arabic"],
+      "is_free": true,
+      "has_free_resources": true,
+      "topics": ["mental_health_awareness", "self_help", "psychoeducation"],
+      "description": "Saudi government mental health awareness portal. Free educational resources."
+    },
+    {
+      "id": "PLATFORM-004",
+      "name": "BetterHelp MENA",
+      "name_arabic": "بيتر هيلب الشرق الأوسط",
+      "website": "https://www.betterhelp.com",
+      "type": "online_therapy_platform",
+      "countries_served": ["Arab world and globally"],
+      "languages": ["Arabic", "English"],
+      "is_free": false,
+      "has_free_resources": false,
+      "topics": ["mental_health", "therapy", "counseling"],
+      "description": "International online therapy platform with Arabic-speaking therapists available."
+    }
+  ],
+
+  "rag_quick_reference": {
+    "description": "Flat lookup table for rapid retrieval by country code. Optimized for Aman's crisis detection pipeline.",
+    "usage": "When crisis signals detected, retrieve this section by country_code and return the highest-priority hotline.",
+    "entries": [
+      { "country_code": "SA", "country": "Saudi Arabia", "primary_number": "920033360", "emergency": "911", "is_24_7": false, "note": "Business hours only – refer to 937 (MOH) for 24/7" },
+      { "country_code": "LB", "country": "Lebanon", "primary_number": "1564", "emergency": "112", "is_24_7": true, "note": "Embrace Lifeline – 24/7 multilingual" },
+      { "country_code": "EG", "country": "Egypt", "primary_number": "08008880700", "emergency": "123", "is_24_7": true, "note": "MOH free 24/7 line" },
+      { "country_code": "JO", "country": "Jordan", "primary_number": "+962 7 9544 0416", "emergency": "911", "is_24_7": false, "note": "JCPA crisis line – business hours" },
+      { "country_code": "AE", "country": "UAE", "primary_number": "800 4673", "emergency": "999", "is_24_7": true, "note": "MOHAP National Mental Support – 24/7" },
+      { "country_code": "QA", "country": "Qatar", "primary_number": "16000", "emergency": "999", "is_24_7": true, "note": "Hamad Medical Corporation – 24/7" },
+      { "country_code": "KW", "country": "Kuwait", "primary_number": "+965 2462 2000", "emergency": "112", "is_24_7": true, "note": "Kuwait Psychological Medicine Hospital" },
+      { "country_code": "BH", "country": "Bahrain", "primary_number": "+973 17 255 555", "emergency": "999", "is_24_7": true, "note": "MOH Psychiatric Hospital" },
+      { "country_code": "OM", "country": "Oman", "primary_number": "+968 24 603 552", "emergency": "9999", "is_24_7": false, "note": "MOH Mental Health Department – business hours" },
+      { "country_code": "IQ", "country": "Iraq", "primary_number": "122", "emergency": "104", "is_24_7": true, "note": "MOH psychosocial support – Arabic and Kurdish" },
+      { "country_code": "SY", "country": "Syria", "primary_number": "+963 944 868 444", "emergency": "110", "is_24_7": false, "note": "Red Crescent – conflict area" },
+      { "country_code": "PS", "country": "Palestine", "primary_number": "+972 8 282 6603", "emergency": "101", "is_24_7": false, "note": "GCMHP – may be disrupted due to conflict" },
+      { "country_code": "MA", "country": "Morocco", "primary_number": "0800 004 747", "emergency": "15", "is_24_7": true, "note": "24/7 free listening line" },
+      { "country_code": "TN", "country": "Tunisia", "primary_number": "+216 8010 3666", "emergency": "197", "is_24_7": false, "note": "Suicide prevention association" },
+      { "country_code": "DZ", "country": "Algeria", "primary_number": "+213 21 71 69 19", "emergency": "14", "is_24_7": false, "note": "Weekdays only" },
+      { "country_code": "LY", "country": "Libya", "primary_number": "1417", "emergency": "1515", "is_24_7": false, "note": "09:00–21:00 except Fridays" },
+      { "country_code": "SD", "country": "Sudan", "primary_number": "+249 183 779 522", "emergency": "999", "is_24_7": false, "note": "Disrupted – use UNHCR as backup" },
+      { "country_code": "YE", "country": "Yemen", "primary_number": "+967 1 250 600", "emergency": "911", "is_24_7": false, "note": "Mon–Thu 08:00–16:00 – conflict zone" },
+      { "country_code": "MR", "country": "Mauritania", "primary_number": "+222 45 25 21 60", "emergency": "17", "is_24_7": false, "note": "National hospital only resource" },
+      { "country_code": "SO", "country": "Somalia", "primary_number": "N/A", "emergency": "888", "is_24_7": false, "note": "No dedicated hotline – use WHO EMRO" },
+      { "country_code": "DJ", "country": "Djibouti", "primary_number": "+253 21 35 15 51", "emergency": "17", "is_24_7": false, "note": "Hospital psychiatric unit" },
+      { "country_code": "KM", "country": "Comoros", "primary_number": "+269 773 11 02", "emergency": "17", "is_24_7": true, "note": "General emergency only" }
+    ]
+  }
+}

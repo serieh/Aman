@@ -1,0 +1,189 @@
+RAG Knowledge Base for Aman
+
+Tier 1 — Core (Non-Negotiable)
+These directly power Aman's ability to respond safely and helpfully.
+
+1. Psychology & Counseling Textbooks
+The backbone of Aman's therapeutic reasoning.
+
+    Cognitive Behavioral Therapy: Basics and Beyond — Judith Beck
+        2nd Edition: https://img3.reoveme.com/m/be38edbbfc79330a.pdf
+
+    Motivational Interviewing — Miller & Rollnick (critical for guiding resistant users)
+        2nd Edition: https://bluepeteraustralia.wordpress.com/wp-content/uploads/2012/12/motivational-interviewing.pdf
+
+    Dialectical Behavior Therapy Skills Training — Marsha Linehan (emotional regulation)
+        2nd Edition: https://mindsplain.com/wp-content/uploads/2020/09/DBT_handouts.pdf
+
+    A Guide to Rational Living — Albert Ellis (REBT framework)
+        https://pdfcoffee.com/qdownload/a-guide-to-rational-living-first-edition-albert-ellis-amp-robert-harper-pdf-free.html
+
+    OpenStax Psychology (full textbook, peer-reviewed)
+        openstax.org/details/books/psychology-2e
+
+    Introduction to Psychology
+        https://resources.saylor.org/wwwresources/archived/site/textbooks/Introduction%20to%20Psychology.pdf
+
+    Self Help Resources for Mental Health Problems  (NOT done yet)
+        https://www.cci.health.wa.gov.au/resources/looking-after-yourself
+
+    The Principles of Psychology, Volume 1 (of 2) by William James
+        https://www.gutenberg.org/ebooks/57628
+
+    The Principles of Psychology, Volume 2 (of 2) by William James
+        https://www.gutenberg.org/ebooks/57634
+
+These teach Aman how to respond, not just what to say. Motivational Interviewing especially aligns with Aman's "positive redirection" persona.
+
+---------------------------------------------------------
+2. Mental Health Guidelines & Clinical Protocols
+Keeps Aman safe, accurate, and within ethical boundaries.
+
+    DSM-5-TR (Diagnostic descriptions only — so Aman can recognize conditions, not diagnose)
+        5th Edition: https://www.psychiatry.ru/siteconst/userfiles/file/book/%D0%90%D0%BD%D0%B3%D0%BB%D0%BE%D1%8F%D0%B7%D1%8B%D1%87%D0%BD%D0%B0%D1%8F%20%D0%BB%D0%B8%D1%82%D0%B5%D1%80%D0%B0%D1%82%D1%83%D1%80%D0%B0%20%D0%BF%D0%BE%20%D0%BF%D1%81%D0%B8%D1%85%D0%B8%D0%B0%D1%82%D1%80%D0%B8%D0%B8/DSM%205%20TR-APA%20(2022).pdf
+
+    ICD-11 Mental and Behavioural Disorders chapter
+        https://faculty.ksu.edu.sa/sites/default/files/icd-_11_2018.pdf
+
+    WHO mhGAP Intervention Guide — community-level mental health protocols
+        Version 2.0: https://www.who.int/publications/i/item/9789241549790
+
+    Mental Health Atlas 2024
+        https://iris.who.int/server/api/core/bitstreams/5897b3c7-2848-47a7-ba22-0a7902342a81/content
+
+    APA Clinical Practice Guidelines — for depression, anxiety, PTSD, suicide
+        Clinical Practice Guideline for the Treatment of Depression Across Three Age Cohorts
+            https://www.apa.org/depression-guideline
+        APA CLINICAL PRACTICE GUIDELINE for the Treatment of Posttraumatic Stress Disorder (PTSD) in Adults
+            https://www.apa.org/ptsd-guideline/ptsd.pdf
+        Placing clinical practice guidelines in context
+            https://www.apa.org/about/offices/directorates/guidelines/context
+
+    IASP (International Association for Suicide Prevention) safe messaging guidelines ← critical for harm prevention
+        https://www.iasp.info/languageguidelines/
+        https://www.iasp.info/wp-content/uploads/IASP-Language-Guidelines-2022-1.pdf
+
+    Jordan/Arab Regional Mental Health Protocols (since Aman targets Arabic users)
+        Psychiatric Mental Health Nursing, Scope of Practice, Professional Standards, Competencies, and Indicators
+            https://www.jnc.gov.jo/ebv4.0/root_storage/ar/eb_list_page/%D9%85%D8%B9%D8%A7%D9%8A%D9%8A%D8%B1_%D9%88%D9%85%D8%AC%D8%A7%D9%84_%D9%85%D9%85%D8%A7%D8%B1%D8%B3%D8%A9_%D8%A7%D9%84%D8%AA%D9%85%D8%B1%D9%8A%D8%B6_%D8%A7%D9%84%D9%86%D9%81%D8%B3%D9%8A_revised.pdf
+        CBAHI National Standards 2025 (cant be downloaded)
+            https://www.scribd.com/document/881473864/Mental-Health-Hospital-Standards-2025
+
+---------------------------------------------------------
+3. Crisis Intervention & Suicide/Self-Harm Protocols
+The most safety-critical data layer.
+
+    Columbia Suicide Severity Rating Scale (C-SSRS) — to understand escalation levels
+        https://cssrs.columbia.edu/wp-content/uploads/C-SSRS_Pediatric-SLC_11.14.16.pdf
+
+    Safe Messaging Guidelines by AFSP and IASP
+        LEADERS SUICIDE PREVENTION SAFE MESSAGING GUIDE
+            https://www.dspo.mil/Portals/113/Documents/DSPO_LSP_SafeMsgGuid%20(Final).pdf
+
+    Crisis Text Line internal de-escalation frameworks (publicly available research)
+        Assessing effective de-escalation of crisis conversations using transformer-based models and trend statistics
+            https://aclanthology.org/2025.emnlp-main.1512.pdf
+
+    Local Arabic crisis hotline numbers and their protocols
+
+
+    CAMS (Collaborative Assessment and Management of Suicidality) framework
+        National Strategy for Suicide Prevention
+            https://www.hhs.gov/sites/default/files/national-strategy-suicide-prevention.pdf
+
+    AFSP Safe Messaging Guidelines
+        https://www.datocms-assets.com/12810/1770224577-talking_safely_about_suicide_flyer_rgb_m1_15036.pdf
+
+Aman must know exactly when and how to escalate, what language is safe to use around self-harm, and what to absolutely avoid saying.
+
+########################################################################################
+Tier 2 — High Value (Strongly Recommended)
+These make Aman genuinely useful for everyday emotional struggles.
+
+4. Therapeutic Techniques & Coping Strategies
+Practical tools Aman can actually teach users during a session.
+
+    CBT thought records and cognitive restructuring worksheets
+    Mindfulness-Based Stress Reduction (MBSR) exercises
+    Grounding techniques (5-4-3-2-1 sensory method, box breathing, etc.)
+    ACT (Acceptance and Commitment Therapy) metaphors and exercises
+    Psychoeducation content — explaining what anxiety/depression feels like in plain language
+
+    Therapist Aid Worksheets (free tier, large library)
+
+    Palouse Mindfulness Mindfulness-Based Stress Reduction
+        https://palousemindfulness.com/docs/manual-print-single.pdf
+
+    Dialectical behavior therapy - wikipedia
+        https://en.wikipedia.org/wiki/Dialectical_behavior_therapy
+
+---------------------------------------------------------
+5. Peer-Reviewed Research Papers
+Gives Aman factual grounding when users ask "why" questions.
+
+    Papers on anxiety, depression, grief, loneliness, burnout, and sleep disorders
+    Research on the effectiveness of specific coping techniques
+    Studies on emotional regulation in Arabic-speaking populations
+    Trauma and PTSD literature (especially cultural trauma in MENA context)
+
+
+Focus on abstracts + conclusions for RAG — full papers are too dense and noisy for retrieval. Chunk them smartly.
+
+---------------------------------------------------------
+6. Psychoeducation & Plain-Language Mental Health Content
+For users who are confused, in denial, or first-timers to mental health conversations.
+
+WHO & APA public-facing factsheets on common conditions
+"What is anxiety/depression/grief?" explainers written for general audiences
+Arabic-language mental health awareness content (e.g., from Takamol, Nafsi, or Shezlong platforms)
+Myths vs. facts documents about mental health (especially important for Arabic cultural context where stigma is high)
+
+WHO Mental Health Fact Sheets
+    https://www.who.int/news-room/fact-sheets/detail/mental-health-strengthening-our-response
+
+########################################################################################
+Tier 3 — Contextual Enrichment
+These fill in the gaps and make Aman culturally and practically aware.
+
+7. Cultural & Religious Sensitivity Data (Critical for Arabic Users)
+This is something most Western mental health systems miss — Aman shouldn't.
+
+    Islamic perspectives on mental health, grief, and anxiety (scholarly, not pop content)
+    Cultural stigma patterns around mental health in Arab societies
+    How to frame mental health support within a faith-based worldview
+    Arabic-specific emotional vocabulary (many Arabic emotional states have no English equivalent)
+
+    دليل تدخالت برنامج رأب الفجوة في الصحة النفسية
+        https://applications.emro.who.int/dsaf/EMROPUB_2013_AR_1581.pdf
+
+    WHO Eastern Mediterranean Region Mental Health
+        https://www.emro.who.int/health-topics/mental-health/
+        Establishing a national substance use treatment information system: A step-by-step guide
+            https://applications.emro.who.int/dsaf/EMROPUB_2014_EN_1796.pdf
+        Strategy for mental health and substance abuse in the Eastern Mediterranean Region 2012–2016 Arabic
+            https://applications.emro.who.int/docs/EM_RC57_3_ar.pdf
+
+
+
+---------------------------------------------------------
+
+8. Referral & Resource Directory
+So Aman can point users to real help.
+
+    Mental health hotlines in the Arab world (KSA, Egypt, UAE, Jordan, etc.)
+    Online therapy platforms available in Arabic (Nafsi, Shezlong, BetterHelp MENA)
+    Emergency services numbers by country
+    How to find a licensed therapist (what to look for, what questions to ask)
+
+---------------------------------------------------------
+
+9. Conversational Counseling Dialogue Datasets
+Teaches Aman how to talk, not just what to know.
+
+    Counseling and Psychotherapy Transcripts — public academic datasets
+    EmpatheticDialogues dataset (Facebook Research) — empathetic response training data
+    MEMO / CounselChat datasets — real therapist Q&A data
+    Synthetic Arabic counseling dialogues (you may need to generate these)
+
+
+This is especially useful if you fine-tune later, but also helps RAG understand the format and tone of supportive responses.
