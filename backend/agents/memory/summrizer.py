@@ -1,9 +1,12 @@
-import asyncpg
+import asyncpg, uuid, json
 from ..creator import llm_summrize
-import uuid, json
+from logger import get_logger 
 
+logger = get_logger(__name__)
 
 def __format_messages_to_string(rows: list, summary: dict) -> str:
+    logger.debug(f"Formatting {len(rows)} messages for summary")
+
     lines = []
     for row in rows:
         role = row["role"].capitalize()
@@ -32,34 +35,48 @@ def __format_messages_to_string(rows: list, summary: dict) -> str:
 
     lines.insert(0, summary_line)
 
+    logger.debug(f"Formatted messages into string with {len(lines)} lines for summary")
+
     return "\n".join(lines)
 
 
 async def get_summary(chat_id: str, pool: asyncpg.Pool, rows: list, old_summary: dict):
     mid = len(rows) // 2
     old_messages = rows[:mid]
+    
+    logger.info(f"Summarization task started | chat_id: {chat_id} | messages_to_compress: {len(old_messages)}")
+    
+    try:
+        old_messages_string = __format_messages_to_string(old_messages, old_summary)
+        
+        logger.debug(f"Passing context to LLM summarizer | chat_id: {chat_id}")
+        summary = await llm_summrize(old_messages_string)
+        
+        last_summary_version = await pool.fetchval(
+            "SELECT COALESCE(MAX(version), 0) FROM summaries WHERE chat_id = $1",
+            uuid.UUID(chat_id)
+        )
 
-    old_messages_string = __format_messages_to_string(old_messages, old_summary)
-    summary = await llm_summrize(old_messages_string)
+        await pool.execute(
+            "INSERT INTO Summaries (chat_id, content, emotional_state, safety_flag, version) "
+            "VALUES ($1, $2, $3, $4, $5)",
+            uuid.UUID(chat_id),
+            summary["content"],
+            json.dumps(summary.get("emotional_state")) if summary.get("emotional_state") else None,
+            summary.get("safety_flag"),
+            (last_summary_version + 1)
+        )
 
-    last_summary_version = await pool.fetch(
-        "SELECT COALESCE(MAX(version), 0) FROM summaries WHERE chat_id = $chat_id",
-        uuid.UUID(chat_id)
-    )
+        old_ids = [row["message_id"] for row in old_messages]
+        await pool.execute(
+            "UPDATE messages SET is_active = $1 WHERE message_id = ANY($2)",
+            False,
+            old_ids
+        )
+        
+        # CORRECT LOG: Confirm success and lifecycle completion
+        logger.info(f"Summarization complete | chat_id: {chat_id} | new_version: {last_summary_version + 1} | archived_messages: {len(old_ids)}")
 
-    await pool.execute(
-        "INSERT INTO Summaries (chat_id, content, emotional_state, safety_flag,"\
-         " version) VALUES ($1, $2, $3, $4, $5)",
-        uuid.UUID(chat_id),
-        summary["content"],
-        json.dumps(summary.get("emotional_state")) if summary.get("emotional_state") else None,
-        summary.get("safety_flag"),
-        (last_summary_version + 1)
-    )
-
-    old_ids = [row["message_id"] for row in old_messages]
-    await pool.execute(
-        "UPDATE messages SET is_active = $1 WHERE message_id = ANY($2)",
-        False,
-        old_ids
-    )
+    except Exception as e:
+        # CORRECT LOG: If the background task crashes, this is the only way you'll know.
+        logger.error(f"Summarization task failed | chat_id: {chat_id} | error: {str(e)}")
