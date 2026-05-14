@@ -1,4 +1,4 @@
-from .memory import load_history, save_message, update_chat_modify_date
+from .memory.controller import load_history, save_message, update_chat_modify_date
 from .creator import GRAPH
 from .prompts.builder import build_system_prompt
 from langchain_core.messages import SystemMessage, HumanMessage

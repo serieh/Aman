@@ -36,7 +36,7 @@ def build_llm():
     structured_llm = llm.with_structured_output(ResponseFormat)
     return structured_llm
 
-async def summarize(user_message: str):
+async def llm_summrize(user_message: str):
     llm = ChatOllama(model=llm_name, format="json")
     messages = [
         SystemMessage(content = summary_prompt),
