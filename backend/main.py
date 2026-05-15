@@ -42,16 +42,17 @@ def home():
     return {"msg": ";3"}
 
 
-@app.post("/chat/{chat_id}/{current_user}")
+@app.post("/chat/{chat_id}/{current_user}/{model_preference}")
 async def send_message(
     chat_id: str,
     body: MessageRequest,
     # current_user = Depends(get_current_user),
     current_user: str,
     background_tasks: BackgroundTasks,
+    model_preference:str = "1",
     pool = Depends(get_pool),
 ):
-    logger.info(f"Chat execution started | chat_id: {chat_id} | user_id: {current_user}")
+    logger.info(f"Chat execution started | chat_id: {chat_id} | user_id: {current_user} | model_preference: {model_preference}")
     # chat = await get_chat(pool, chat_id)
     # if chat["user_id"] != current_user["user_id"]:
     #     raise HTTPException(403)
@@ -68,6 +69,7 @@ async def send_message(
             chat_id=chat_id,
             user_message=body.content,
             background_tasks=background_tasks,
+            model_preference=model_preference
         )
         logger.info(f"Agent execution completed | chat_id: {chat_id}")
         return {"reply": reply}

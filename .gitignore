@@ -300,3 +300,5 @@ resoruces.txt
 # data/
 docs/
 testing_only/
+**/__pycache__/
+Logs/

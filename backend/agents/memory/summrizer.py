@@ -1,5 +1,5 @@
 import asyncpg, uuid, json
-from ..creator import llm_summrize
+from ..graph import llm_summrize
 from logger import get_logger 
 
 logger = get_logger(__name__)
@@ -74,9 +74,7 @@ async def get_summary(chat_id: str, pool: asyncpg.Pool, rows: list, old_summary:
             old_ids
         )
         
-        # CORRECT LOG: Confirm success and lifecycle completion
         logger.info(f"Summarization complete | chat_id: {chat_id} | new_version: {last_summary_version + 1} | archived_messages: {len(old_ids)}")
 
     except Exception as e:
-        # CORRECT LOG: If the background task crashes, this is the only way you'll know.
         logger.error(f"Summarization task failed | chat_id: {chat_id} | error: {str(e)}")

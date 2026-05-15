@@ -60,7 +60,7 @@ CREATE TABLE chats (
 
 ## 3. Messages Table
 
-**Purpose:** Stores the full conversation history for every chat. When a user continues an existing chat, the backend fetches all rows for that `chat_id` and injects them into the LLM's context window so the agent remembers the conversation. Messages can have the role `summary` or `assistant` to represent condensed older messages when a conversation grows too long for the context window.
+**Purpose:** Stores the full conversation history for every chat. When a user continues an existing chat, the backend fetches all **active** rows for that `chat_id` and injects them into the LLM's context window so the agent remembers the conversation. When a chat grows too long, older messages are archived by setting `is_active = FALSE` and a summary is written to the Summaries table instead. Archived messages are never deleted — they stay in the table for reference but are excluded from the LLM context.
 
 **Columns:**
 
@@ -68,54 +68,161 @@ CREATE TABLE chats (
 |---|---|---|
 | `message_id` | UUID | Primary key, auto-generated |
 | `chat_id` | UUID | Foreign key linking to `chats.chat_id`. Deleted automatically if the chat is deleted |
-| `role` | VARCHAR(20) | Who sent the message: `user`, `assistant`, `system`, or `summary` |
+| `role` | VARCHAR(20) | Who sent the message: `user`, `assistant`, or `system` |
 | `content` | TEXT | The actual text of the message |
 | `creation_date` | TIMESTAMPTZ | Timestamp of when the message was sent |
 | `emotional_state` | JSONB | Emotion snapshot captured at the time of the message (e.g., `{"emotion": "sadness", "score": 0.84}`) |
 | `safety_flag` | TEXT | Safety tier triggered by the message, if any: `RED`, `ORANGE`, `YELLOW`, or `GRAY` |
+| `is_active` | BOOLEAN | `TRUE` = included in LLM context. `FALSE` = archived (was summarized, excluded from context) |
 
 ```sql
 CREATE TABLE messages (
     message_id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     chat_id         UUID NOT NULL REFERENCES chats(chat_id) ON DELETE CASCADE,
-    role            VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'summary')),
+    role            VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
     content         TEXT NOT NULL,
     creation_date   TIMESTAMPTZ DEFAULT NOW(),
     emotional_state JSONB,
-    safety_flag     TEXT
+    safety_flag     TEXT,
+    is_active       BOOLEAN DEFAULT TRUE
 );
 ```
 
 ---
 
-## 4. Messages Backup Table
+## 4. Summaries Table
 
-**Purpose:** An archive of messages that were summarized and removed from the main `messages` table. When a conversation grows too long for the LLM's context window, older messages are condensed into a `summary` or `assistant`  row in `messages` and the originals are moved here. These rows are kept for record-keeping but are no longer injected into the LLM's context. The `summary_id` column points to the `summary` row in `messages` that replaced them.
+**Purpose:** Stores the full history of rolling summaries for each chat. Every time the active messages exceed the context limit, the oldest messages are archived (`is_active = FALSE`) and a **new summary row is inserted** — it does not overwrite the previous one. Each row is immutable once written. The `version` column tracks the order. When loading context, the backend always fetches the latest version (highest `version` number). Older versions are never used for inference but are preserved for reference and future longitudinal analysis.
 
 **Columns:**
 
 | Column | Type | Description |
 |---|---|---|
-| `message_id` | UUID | Same UUID as the original message — no new ID is generated |
-| `chat_id` | UUID | Foreign key linking to `chats.chat_id` |
-| `role` | VARCHAR(20) | Same role as the original: `user`, `assistant`, `system`, or `summary` |
-| `content` | TEXT | The original message content |
-| `emotional_state` | JSONB | Emotion data from the original message |
-| `safety_flag` | TEXT | Safety flag from the original message |
-| `original_creation_date` | TIMESTAMPTZ | When the original message was created |
-| `backup_date` | TIMESTAMPTZ | When the message was moved to this archive table |
-| `summary_id` | UUID | Points to the `summary` row in `messages` that replaced this message |
+| `summary_id` | UUID | Primary key, auto-generated |
+| `chat_id` | UUID | Foreign key linking to `chats.chat_id`. Deleted automatically if the chat is deleted |
+| `content` | TEXT | The condensed summary of all archived messages up to this point |
+| `emotional_state` | JSONB | Aggregated emotional snapshot across all archived messages up to this version |
+| `safety_flag` | TEXT | The highest safety tier seen across all archived messages up to this version, if any: `RED`, `ORANGE`, `YELLOW`, or `GRAY` |
+| `version` | INTEGER | Increments by 1 each time a new summary is generated for this chat (1, 2, 3...) |
+| `creation_date` | TIMESTAMPTZ | Timestamp of when this summary version was created |
 
 ```sql
-CREATE TABLE messages_backup (
-    message_id              UUID PRIMARY KEY,
-    chat_id                 UUID NOT NULL REFERENCES chats(chat_id) ON DELETE CASCADE,
-    role                    VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'summary')),
-    content                 TEXT NOT NULL,
-    emotional_state         JSONB,
-    safety_flag             TEXT,
-    original_creation_date  TIMESTAMPTZ,
-    backup_date             TIMESTAMPTZ DEFAULT NOW(),
-    summary_id              UUID
+CREATE TABLE summaries (
+    summary_id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    chat_id         UUID NOT NULL REFERENCES chats(chat_id) ON DELETE CASCADE,
+    content         TEXT NOT NULL,
+    emotional_state JSONB,
+    safety_flag     TEXT,
+    version         INTEGER NOT NULL DEFAULT 1,
+    creation_date   TIMESTAMPTZ DEFAULT NOW()
 );
 ```
+
+---
+
+## 5. Schema Overview
+
+```
+users
+  user_id (PK)
+  name
+  email
+  password
+  preferred_language
+  country
+  creation_date
+       │
+       │ one user → many chats
+       ▼
+chats
+  chat_id (PK)
+  user_id (FK → users)
+  title
+  creation_date
+  modify_date
+       │
+       ├─────────────────────────────────────┐
+       │ one chat → many messages            │ one chat → many summaries
+       ▼                                     ▼
+messages                               summaries
+  message_id (PK)                        summary_id (PK)
+  chat_id (FK → chats)                   chat_id (FK → chats)
+  role                                   content
+  content                                emotional_state
+  creation_date                          safety_flag
+  emotional_state                        version          ← 1, 2, 3...
+  safety_flag                            creation_date
+  is_active
+```
+
+---
+
+## 6. Relationships & Cascade Rules
+
+| Relationship | Type | On Delete |
+|---|---|---|
+| `users` → `chats` | One-to-many | Deleting a user deletes all their chats |
+| `chats` → `messages` | One-to-many | Deleting a chat deletes all its messages |
+| `chats` → `summaries` | One-to-many | Deleting a chat deletes all its summaries |
+
+---
+
+## 7. Context Loading Logic
+
+When the agent loads context for a chat, it always follows this order:
+
+```
+1. SELECT content FROM summaries
+   WHERE chat_id = $1
+   ORDER BY version DESC
+   LIMIT 1
+   → inject as the first item in context (if any summary exists)
+
+2. SELECT * FROM messages
+   WHERE chat_id = $1 AND is_active = TRUE
+   ORDER BY creation_date ASC
+   → inject in chronological order after the summary
+```
+
+**Summarization trigger** — runs before loading context if active messages exceed the limit:
+
+```
+if COUNT(active messages) > MAX_MESSAGES (e.g. 40):
+
+    1. Take the oldest 20 active messages
+    2. Get the current latest summary (if any)
+    3. Generate a new summary:
+         new_summary = LLM(latest_summary + oldest_20_messages)
+    4. Get current max version for this chat (0 if none)
+    5. INSERT into summaries (chat_id, content, emotional_state, safety_flag, version)
+         VALUES ($chat_id, new_summary, ..., max_version + 1)
+    6. SET is_active = FALSE on those 20 messages
+    7. Continue with context load as normal
+```
+
+After summarization, the context the LLM receives looks like:
+
+```
+[SUMMARY v3] "User has been struggling with work stress since week 1.
+              Mentioned feeling isolated. Dominant emotion: sadness.
+              In week 2, discussed conflict with manager..."
+
+[user]       "today was really bad again"
+[assistant]  "I'm sorry to hear that. What happened today?"
+[user]       "my manager criticized me in front of everyone"
+...          (remaining active messages)
+```
+
+Older summary versions (v1, v2) remain in the table but are never loaded into the LLM context.
+
+---
+
+## 8. Notes
+
+- **Passwords** must always be stored as bcrypt hashes. Never store plaintext.
+- **`preferred_language`** accepted values: `ar` (Arabic), `en` (English), `auto` (detect from input).
+- **`safety_flag`** accepted values: `RED`, `ORANGE`, `YELLOW`, `GRAY`, or `NULL` (no flag).
+- **`role`** accepted values in messages: `user`, `assistant`, `system`.
+- **`emotional_state`** expected shape: `{"emotion": "sadness", "score": 0.84}` — stored as JSONB for flexibility.
+- **`summaries.version`** starts at 1 and increments by 1 each time a new summary is generated for that chat. The application is responsible for computing `MAX(version) + 1` before each insert.
+- **`chats.modify_date`** should be updated by the application every time a new message is added to the chat.

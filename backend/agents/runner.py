@@ -2,7 +2,7 @@ from asyncpg import pool
 from fastapi import BackgroundTasks
 from logger import get_logger
 from .memory.controller import load_history, save_message, update_chat_modify_date
-from .creator import GRAPH
+from .graph import GRAPH
 from .prompts.builder import build_system_prompt
 from langchain_core.messages import SystemMessage, HumanMessage
 import asyncpg
@@ -20,6 +20,7 @@ async def run_agent(
     background_tasks: BackgroundTasks,
     # emotion_context: dict | None = None,
     safety_flag: str | None = None,
+    model_preference: str = "1"
     
 ) -> str:
     log_meta = f"Agent runner started | chat_id: {chat_id} | user_id: {user_id}"
@@ -28,7 +29,7 @@ async def run_agent(
     logger.info(log_meta)
 
     try:
-        history = await load_history(pool, chat_id, background_tasks)
+        history = await load_history(pool, chat_id, background_tasks,)
         
         messages = [
             SystemMessage(content=SYSTEM_PROMPT), 
@@ -43,6 +44,7 @@ async def run_agent(
             "user_id": user_id,
             "chat_id": chat_id,
             # "emotion_context": emotion_context,
+            "model_preference": model_preference,
         })
 
         response = result.get("response") or {}
@@ -72,6 +74,5 @@ async def run_agent(
         return cleaned_response
         
     except Exception as e:
-        # CORRECT LOG: Ensure pipeline crashes are captured immediately
         logger.error(f"Agent runner failed | chat_id: {chat_id} | error: {str(e)}")
         raise

@@ -12,54 +12,51 @@ from logger import get_logger
 logger = get_logger(__name__)
 logger.info("Creator agent module loaded")
 
-llm_name = "qwen3.5:9b"
-llm_summary_name = "qwen3.5:4b"
+llm_thinking_name = "gemma4:31b" # "qwen3.5:9b"
+llm_fast_name = "gemma4:e2b" # "qwen3.5:4b"
 
 # Import for any tool here, e.g.:
 # from .tools.rag import rag_tool
-
+TOOLS = []
 
 class ResponseFormat(BaseModel):
     content: str
     emotional_state: dict        # e.g. {"emotion": "sadness", "confidence": 0.84}
     # safety_flag: str  
 
+logger.info("Building LLMs")
 
-class AgentState(TypedDict):
-    messages: Annotated[Sequence, operator.add]
-    user_id: str
-    chat_id: str
-    emotion_context: dict | None   
-    response: dict | None # it works and i dont like it
+logger.info(f"Building LLM | Target Model: Thinking")
+llm_thinking = ChatOllama(
+    model=llm_thinking_name,
+    num_ctx=8192,
+    keep_alive=-1,
+    repeat_penalty=1.15,
+).bind_tools(TOOLS)
+structured_llm_thinking = llm_thinking.with_structured_output(ResponseFormat)
 
-
-# Tools will be added here when YOU MY FRIEND finshed them :|
-TOOLS = []
-
-def build_llm():
-    logger.info("Building LLM")
-    llm = ChatOllama(
-        model=llm_name, 
-        stop=["<|im_start|>", "<|im_end|>"],
-        num_ctx=32768, 
-        keep_alive=-1 # Keeps the model in VRAM indefinitely
-    ).bind_tools(TOOLS)
-    structured_llm = llm.with_structured_output(ResponseFormat)
-    return structured_llm
+logger.info(f"Building LLM | Target Model: Fast")
+llm_fast = ChatOllama(
+    model=llm_fast_name,
+    num_ctx=8192,
+    keep_alive=-1,
+    repeat_penalty=1.15,
+    think=False,
+)
+structured_llm_fast = llm_fast.with_structured_output(ResponseFormat)
 
 async def llm_summrize(user_message: str):
-    logger.debug("LLM summarization requested")
+    logger.info("LLM summarization requested")
     try:
-        llm = ChatOllama(model=llm_summary_name, format="json")
+        llm = ChatOllama(model=llm_fast_name, num_ctx=8192)
         messages = [
             SystemMessage(content = summary_prompt),
             HumanMessage(content=user_message)
         ]
 
-        reply = llm.invoke(messages)
+        reply = await llm.ainvoke(messages)
         parsed = json.loads(reply.content)
         
-        # CORRECT LOG: Track the success, but NEVER the raw `parsed` content.
         logger.info("LLM summarization completed successfully")
         return parsed
         
@@ -67,18 +64,25 @@ async def llm_summrize(user_message: str):
         logger.error(f"LLM summarization failed | error: {str(e)}")
         raise
 
+class AgentState(TypedDict):
+    messages: Annotated[Sequence, operator.add]
+    user_id: str
+    chat_id: str
+    emotion_context: dict | None   
+    response: dict | None
+    model_preference: str
+
 
 async def agent_node(state: AgentState):
     chat_id = state.get("chat_id", "unknown")
-    logger.debug(f"Agent node processing | chat_id: {chat_id}")
+    model_preference = state.get("model_preference", "thinking")
+    logger.info(f"Agent node processing | chat_id: {chat_id} | model_tier: {model_preference}")
     
     try:
-        llm = build_llm()
-        
-        # FIX: Changed to await and ainvoke
+        llm = structured_llm_thinking if model_preference == "thinking" else structured_llm_fast
         response = await llm.ainvoke(state["messages"])
+        logger.debug(f"LLM response received | chat_id: {chat_id} | Model Used: {model_preference}")
         
-        # Extract metadata for logging without exposing content
         resp_dict = response.model_dump()
         emotion = resp_dict.get("emotional_state", {}).get("emotion", "unknown")
         
@@ -106,8 +110,10 @@ def should_use_tools(state: AgentState) -> str:
 
 def build_graph() -> object:
     logger.info("Building agent graph")
+
     tool_node = ToolNode(TOOLS)
     graph = StateGraph(AgentState)
+
     graph.add_node("agent", agent_node)
     graph.add_node("tools", tool_node)
 

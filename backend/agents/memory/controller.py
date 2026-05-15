@@ -72,7 +72,7 @@ async def load_history(pool: asyncpg.Pool, chat_id: str, background_tasks: Backg
     if total_chars > MAX_HISTORY_CHARS:
         if summary_task is None or summary_task.done():
             logger.info(f"Context limit exceeded, triggering summarization | chat_id: {chat_id}")
-            summary_task = background_tasks.add_task(get_summary(chat_id, pool, rows))
+            summary_task = background_tasks.add_task(get_summary, chat_id, pool, rows, last_summary)
         else:
             logger.info(f"Summary already in progress, skipping new summary task | chat_id: {chat_id}")
 
