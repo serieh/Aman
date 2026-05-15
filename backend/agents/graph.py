@@ -5,7 +5,8 @@ from langgraph.prebuilt import ToolNode
 from typing import TypedDict, Annotated, Sequence
 import operator, json
 from langchain_core.messages import SystemMessage, HumanMessage
-from .prompts.summary import summary_prompt
+from .prompts.summary import SUMMARY_PROMPT
+from .prompts.title import TITLE_PROMPT
 from pydantic import BaseModel
 from logger import get_logger
 
@@ -50,7 +51,7 @@ async def llm_summrize(user_message: str):
     try:
         llm = ChatOllama(model=llm_fast_name, num_ctx=8192)
         messages = [
-            SystemMessage(content = summary_prompt),
+            SystemMessage(content = SUMMARY_PROMPT),
             HumanMessage(content=user_message)
         ]
 
@@ -62,6 +63,26 @@ async def llm_summrize(user_message: str):
         
     except Exception as e:
         logger.error(f"LLM summarization failed | error: {str(e)}")
+        raise
+
+async def title_generator(user_message: str):
+    logger.info("LLM title generation requested")
+    try:
+        llm = ChatOllama(model=llm_fast_name)
+        messages = [
+            SystemMessage(content = TITLE_PROMPT),
+            HumanMessage(content=user_message)
+        ]
+
+        reply = await llm.ainvoke(messages)
+
+        title = reply.content.strip()
+        
+        logger.info("LLM title generation completed successfully")
+        return title
+        
+    except Exception as e:
+        logger.error(f"LLM title generation failed | error: {str(e)}")
         raise
 
 class AgentState(TypedDict):

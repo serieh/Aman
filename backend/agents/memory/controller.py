@@ -13,6 +13,7 @@ summary_task = None
 
 
 async def load_history(pool: asyncpg.Pool, chat_id: str, background_tasks: BackgroundTasks,) -> list:
+    global summary_task
     logger.debug(f"History load started | chat_id: {chat_id}")
     rows = await pool.fetch(
         """
