@@ -1,4 +1,5 @@
 import logging
+import os
 
 def get_logger(name: str) -> logging.Logger:
     logger = logging.getLogger(name)
@@ -15,7 +16,9 @@ def get_logger(name: str) -> logging.Logger:
         console.setLevel(logging.INFO)
         console.setFormatter(formatter)
 
-        file = logging.FileHandler("Logs/aman.log")
+        log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Logs")
+        os.makedirs(log_dir, exist_ok=True)
+        file = logging.FileHandler(os.path.join(log_dir, "aman.log"))
         file.setLevel(logging.DEBUG)
         file.setFormatter(formatter)
 

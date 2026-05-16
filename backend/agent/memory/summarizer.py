@@ -1,5 +1,6 @@
 import asyncpg, uuid, json
-from ..graph import llm_summrize
+
+from agent.llm import llm_summrize
 from logger import get_logger 
 
 logger = get_logger(__name__)
@@ -29,11 +30,18 @@ def __format_messages_to_string(rows: list, summary: dict) -> str:
 
         lines.append(line)
 
-    summary_line = f"Summary: {summary['content']} \
-    [Emotion: {summary.get('emotional_state', {}).get('emotion', '?')}, Confidence: {summary.get('emotional_state', {}).get('confidence', '?')}]\
+    if summary:
+        summary_emotional = summary.get("emotional_state", {})
+        if isinstance(summary_emotional, str):
+            try:
+                summary_emotional = json.loads(summary_emotional)
+            except (json.JSONDecodeError, TypeError):
+                summary_emotional = {}
+        
+        summary_line = f"Summary: {summary['content']} \
+    [Emotion: {summary_emotional.get('emotion', '?')}, Confidence: {summary_emotional.get('confidence', '?')}]\
     [Safety: {summary.get('safety_flag', '?')}"
-
-    lines.insert(0, summary_line)
+        lines.insert(0, summary_line)
 
     logger.debug(f"Formatted messages into string with {len(lines)} lines for summary")
 
@@ -78,3 +86,4 @@ async def get_summary(chat_id: str, pool: asyncpg.Pool, rows: list, old_summary:
 
     except Exception as e:
         logger.error(f"Summarization task failed | chat_id: {chat_id} | error: {str(e)}")
+        raise

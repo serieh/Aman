@@ -1,25 +1,21 @@
-import asyncio
 import json, uuid, asyncpg
 from fastapi import BackgroundTasks
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from datetime import datetime, timezone
-from .summrizer import get_summary
+
+from agent.memory.summarizer import get_summary
+from config import MAX_MESSAGES_BEFORE_SUMMARY
 from logger import get_logger
 
 logger = get_logger(__name__)
 
-MAX_HISTORY_CHARS = 160000
-summary_task = None
-
-
 async def load_history(pool: asyncpg.Pool, chat_id: str, background_tasks: BackgroundTasks,) -> list:
-    global summary_task
     logger.debug(f"History load started | chat_id: {chat_id}")
     rows = await pool.fetch(
         """
         SELECT *
         FROM messages
-        WHERE chat_id = $1
+        WHERE chat_id = $1 AND is_active = TRUE
         ORDER BY creation_date ASC
         """,
         uuid.UUID(chat_id),
@@ -48,13 +44,12 @@ async def load_history(pool: asyncpg.Pool, chat_id: str, background_tasks: Backg
         if last_summary.get("emotional_state", None):
             emotion = json.loads(last_summary["emotional_state"])
             content += f"\n[User appeared {emotion['emotion']} (confidence: {int(emotion['confidence'] * 100)}%) during this Summary of the previous conversations.]"
-        history.append(SystemMessage(content=last_summary["content"]))
+        history.append(SystemMessage(content=content))
 
     for row in rows:
         if row["role"] == "user":
             content = row["content"]
             if row.get("emotional_state", None):
-                # FIX: Safe dictionary parsing
                 emotion = json.loads(row["emotional_state"])
                 emo_name = emotion.get("emotion", "unknown")
                 emo_conf = emotion.get("confidence", 0.0)
@@ -70,12 +65,9 @@ async def load_history(pool: asyncpg.Pool, chat_id: str, background_tasks: Backg
 
     total_chars = sum(len(m.content) for m in history)
     logger.info(f"History loaded | chat_id: {chat_id} | messages: {len(history)} | total_chars: {total_chars}")
-    if total_chars > MAX_HISTORY_CHARS:
-        if summary_task is None or summary_task.done():
-            logger.info(f"Context limit exceeded, triggering summarization | chat_id: {chat_id}")
-            summary_task = background_tasks.add_task(get_summary, chat_id, pool, rows, last_summary)
-        else:
-            logger.info(f"Summary already in progress, skipping new summary task | chat_id: {chat_id}")
+    if len(rows) >= MAX_MESSAGES_BEFORE_SUMMARY:
+        logger.info(f"Message limit exceeded ({len(rows)} >= {MAX_MESSAGES_BEFORE_SUMMARY}), triggering summarization | chat_id: {chat_id}")
+        background_tasks.add_task(get_summary, chat_id, pool, rows, last_summary)
 
     logger.debug(f"Constructed message history with {len(history)} messages and total {total_chars} characters for chat_id={chat_id}")
 
