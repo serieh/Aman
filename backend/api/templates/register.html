@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Register – Aman</title>
+</head>
+<body>
+  <h2>Register</h2>
+  <input id="name"      placeholder="Full Name" />
+  <input id="email"     placeholder="Email" type="email" />
+  <input id="password"  placeholder="Password" type="password" />
+  <input id="birthdate" placeholder="Birthdate" type="date" />
+  <select id="gender">
+    <option value="male">Male</option>
+    <option value="female">Female</option>
+  </select>
+  <input id="country"   placeholder="Country code (e.g. SA)" maxlength="2" />
+  <button onclick="register()">Register</button>
+  <p>Already have an account? <a href="/login/">Login</a></p>
+
+  <script>
+    async function register() {
+      const res = await fetch("/api/v1/auth/register/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name:      document.getElementById("name").value,
+          email:     document.getElementById("email").value,
+          password:  document.getElementById("password").value,
+          birthdate: document.getElementById("birthdate").value,
+          gender:    document.getElementById("gender").value,
+          country:   document.getElementById("country").value,
+        })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        localStorage.setItem("access",  data.access)
+        localStorage.setItem("refresh", data.refresh)
+        window.location.href = "/dashboard/"  // redirect after registration
+      } else {
+        const errors = Object.values(data).flat().join("\n")
+        alert("Registration failed:\n" + errors)
+      }
+    }
+  </script>
+</body>
+</html>

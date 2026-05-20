@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Chat – Aman</title>
+</head>
+<body>
+  <a href="/dashboard/">← Back to chats</a>
+  <div id="messages"></div>
+  <input id="input" placeholder="Type a message..." />
+  <button onclick="sendMessage()">Send</button>
+
+  <script>
+    const access = localStorage.getItem("access")
+    if (!access) { window.location.href = "/login/" }
+
+    const chatId = window.location.pathname.split("/")[2]
+
+    async function loadMessages() {
+      const res  = await fetch(`/api/v1/chats/${chatId}/`, {
+        headers: { "Authorization": `Bearer ${access}` }
+      })
+      if (res.status === 401) { localStorage.clear(); window.location.href = "/login/"; return }
+      if (!res.ok) return
+      const data = await res.json()
+      const box  = document.getElementById("messages")
+      box.innerHTML = ""
+      data.messages.forEach(m => {
+        box.innerHTML += `<p><b>${m.role}:</b> ${m.content}</p>`
+      })
+    }
+
+    async function sendMessage() {
+      const input   = document.getElementById("input")
+      const content = input.value.trim()
+      if (!content) return
+      input.value = ""
+
+      const res  = await fetch(`/api/v1/chats/${chatId}/message/`, {
+        method:  "POST",
+        headers: {
+          "Authorization": `Bearer ${access}`,
+          "Content-Type":  "application/json"
+        },
+        body: JSON.stringify({ content: content, model: "2" })
+      })
+      if (res.status === 401) { localStorage.clear(); window.location.href = "/login/"; return }
+      const data = await res.json()
+      loadMessages()
+    }
+
+    loadMessages()
+  </script>
+</body>
+</html>

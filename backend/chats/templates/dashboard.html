@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>My Chats – Aman</title>
+</head>
+<body>
+  <h2>My Chats</h2>
+  <button onclick="createChat()">New Chat</button>
+  <button onclick="logout()">Logout</button>
+  <ul id="chat-list"></ul>
+
+  <script>
+    const access = localStorage.getItem("access")
+    if (!access) { window.location.href = "/login/" }
+
+    async function loadChats() {
+      const res  = await fetch("/api/v1/chats/", {
+        headers: { "Authorization": `Bearer ${access}` }
+      })
+      if (res.status === 401) { localStorage.clear(); window.location.href = "/login/"; return }
+      const data = await res.json()
+      const list = document.getElementById("chat-list")
+      list.innerHTML = ""
+      data.forEach(chat => {
+        const li = document.createElement("li")
+        li.innerHTML = `<a href="/chat/${chat.chat_id}/">${chat.title || "Untitled"}</a>`
+        list.appendChild(li)
+      })
+    }
+
+    async function createChat() {
+      const res  = await fetch("/api/v1/chats/", {
+        method:  "POST",
+        headers: {
+          "Authorization": `Bearer ${access}`,
+          "Content-Type":  "application/json"
+        }
+      })
+      if (res.status === 401) { localStorage.clear(); window.location.href = "/login/"; return }
+      const data = await res.json()
+      window.location.href = `/chat/${data.chat_id}/`
+    }
+
+    async function logout() {
+      try {
+        await fetch("/api/v1/auth/logout/", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${access}`,
+            "Content-Type": "application/json"
+          }
+        })
+      } catch (e) {
+        console.log("Logout request failed, continuing client logout")
+      }
+
+      // ALWAYS clear local storage
+      localStorage.removeItem("access")
+      localStorage.removeItem("refresh") // if you have refresh token)
+
+      window.location.href = "/login/"
+    }
+
+    loadChats()
+  </script>
+</body>
+</html>

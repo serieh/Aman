@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Login – Aman</title>
+</head>
+<body>
+  <h2>Login</h2>
+  <input id="email"    placeholder="Email" />
+  <input id="password" placeholder="Password" type="password" />
+  <button onclick="login()">Login</button>
+  <p>Don't have an account? <a href="/register/">Register</a></p>
+
+  <script>
+    async function login() {
+      const res = await fetch("/api/v1/auth/login/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email:    document.getElementById("email").value,
+          password: document.getElementById("password").value,
+        })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        localStorage.setItem("access",  data.access)
+        localStorage.setItem("refresh", data.refresh)
+        window.location.href = "/dashboard/"  // redirect after login
+      } else {
+        alert("Invalid credentials")
+      }
+    }
+  </script>
+</body>
+</html>
