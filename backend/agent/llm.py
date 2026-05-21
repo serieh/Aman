@@ -34,34 +34,41 @@ llm_fast = ChatOllama(
 )
 structured_llm_fast = llm_fast.with_structured_output(ResponseFormat)
 
+MAX_RETRIES = 3
+
 def llm_summarize(user_message: str):
     logger.info("LLM summarization requested")
-    try:
-        llm = ChatOllama(model=LLM_FAST_MODEL, num_ctx=LLM_CONTEXT_WINDOW)
-        messages = [
-            SystemMessage(content=SUMMARY_PROMPT),
-            HumanMessage(content=user_message)
-        ]
-        reply = llm.invoke(messages)
-        parsed = json.loads(reply.content)
-        logger.info("LLM summarization completed successfully")
-        return parsed
-    except Exception as e:
-        logger.error(f"LLM summarization failed | error: {str(e)}")
-        raise
+    messages = [
+        SystemMessage(content=SUMMARY_PROMPT),
+        HumanMessage(content=user_message)
+    ]
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            reply = llm_fast.invoke(messages)
+            raw = reply.content.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+            parsed = json.loads(raw)
+            logger.info("LLM summarization completed successfully")
+            return parsed
+        except Exception as e:
+            logger.warning(f"LLM summarization attempt {attempt}/{MAX_RETRIES} failed | error: {str(e)}")
+            if attempt == MAX_RETRIES:
+                logger.error("LLM summarization exhausted retries, using fallback")
+                return {"content": user_message, "emotional_state": None, "safety_flag": None}
 
 def title_generator(user_message: str):
     logger.info("LLM title generation requested")
-    try:
-        llm = ChatOllama(model=LLM_FAST_MODEL)
-        messages = [
-            SystemMessage(content=TITLE_PROMPT),
-            HumanMessage(content=user_message)
-        ]
-        reply = llm.invoke(messages)
-        title = reply.content.strip()
-        logger.info("LLM title generation completed successfully")
-        return title
-    except Exception as e:
-        logger.error(f"LLM title generation failed | error: {str(e)}")
-        raise
+    messages = [
+        SystemMessage(content=TITLE_PROMPT),
+        HumanMessage(content=user_message)
+    ]
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            reply = llm_fast.invoke(messages)
+            title = reply.content.strip()
+            logger.info("LLM title generation completed successfully")
+            return title
+        except Exception as e:
+            logger.warning(f"LLM title generation attempt {attempt}/{MAX_RETRIES} failed | error: {str(e)}")
+            if attempt == MAX_RETRIES:
+                logger.error("LLM title generation exhausted retries, using fallback")
+                return "New Chat"

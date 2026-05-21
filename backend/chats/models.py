@@ -17,7 +17,7 @@ class Chat(models.Model):
 class Message(models.Model):
     message_id      = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     chat            = models.ForeignKey(Chat, on_delete=models.CASCADE, db_column="chat_id")
-    role            = models.CharField(max_length=20)  # user / assistant
+    role            = models.CharField(max_length=20)  # user / assistant / WARNING
     content         = models.TextField()
     creation_date   = models.DateTimeField(auto_now_add=True)
     emotional_state = models.JSONField(null=True, blank=True)

@@ -16,26 +16,33 @@ class AgentState(TypedDict):
     response: dict | None
     model_preference: str
 
+FALLBACK_RESPONSE = {
+    "content": "I'm here with you. Could you tell me a little more about what's on your mind?",
+    "emotional_state": {"emotion": "unknown", "confidence": 0.0},
+}
+
+MAX_RETRIES = 3
+
 def agent_node(state: AgentState):
     chat_id = state.get("chat_id", "unknown")
     model_preference = state.get("model_preference", "2")
     logger.info(f"Agent node processing | chat_id: {chat_id} | model_tier: {model_preference}")
-    
-    try:
-        llm = structured_llm_thinking if model_preference == "1" else structured_llm_fast
-        response = llm.invoke(state["messages"])
-        logger.debug(f"LLM response received | chat_id: {chat_id} | Model Used: {model_preference}")
-        
-        resp_dict = response.model_dump()
-        emotion = resp_dict.get("emotional_state", {}).get("emotion", "unknown")
-        
-        logger.info(f"LLM response generated | chat_id: {chat_id} | detected_emotion: {emotion}")
-        
-        return {"response": resp_dict}
-        
-    except Exception as e:
-        logger.error(f"Agent node execution failed | chat_id: {chat_id} | error: {str(e)}")
-        raise
+
+    llm = structured_llm_thinking if model_preference == "1" else structured_llm_fast
+
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            response = llm.invoke(state["messages"])
+            resp_dict = response.model_dump()
+            emotion = resp_dict.get("emotional_state", {}).get("emotion", "unknown")
+            logger.info(f"LLM response generated | chat_id: {chat_id} | detected_emotion: {emotion} | attempt: {attempt}")
+            return {"response": resp_dict}
+
+        except Exception as e:
+            logger.warning(f"Agent node attempt {attempt}/{MAX_RETRIES} failed | chat_id: {chat_id} | error: {str(e)}")
+            if attempt == MAX_RETRIES:
+                logger.error(f"Agent node exhausted retries, using fallback | chat_id: {chat_id}")
+                return {"response": FALLBACK_RESPONSE}
 
 def build_graph() -> object:
     logger.info("Building agent graph")
