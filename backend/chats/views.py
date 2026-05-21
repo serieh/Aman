@@ -3,9 +3,13 @@ from django.views import View
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+
 from .models import Chat, Message
 from .serializers import ChatSerializer, ChatDetailSerializer, MessageRequestSerializer
+from agent.runner import run_agent
+from logger import get_logger
 
+logger = get_logger(__name__)
 
 # ── Pages ─────────────────────────────────────────────────────
 
@@ -55,37 +59,42 @@ class ChatDetailView(APIView):
 
 
 class MessageView(APIView):
-
     def post(self, request, chat_id):
+        # Validate the chat exists and belongs to the user
         try:
             chat = Chat.objects.get(chat_id=chat_id, user=request.user)
         except Chat.DoesNotExist:
-            return Response({"error": "Chat not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Chat not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         serializer = MessageRequestSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
         user_message = serializer.validated_data["content"]
-        model_preference = serializer.validated_data["model"]
-        messages = ChatDetailSerializer().get_messages(chat)
+        model_preference = serializer.validated_data.get("model", "2")
+        user_id = str(request.user.id)
+        chat_id_str = str(chat_id)
 
-        # ── AI goes here later ──────────────────────────────
-        # reply = await run_agent(chat_id, user_message, messages, model_preference)
-        response = {
-            "content": "This is a placeholder response from the AI.",
-            "emotional_state": {"note": "This is a placeholder emotional state.", "emotion": "neutral", "confidence": 0.8}
-        }
-        # ───────────────────────────────────────────────────
+        logger.info(
+            f"MessageView dispatching to agent | chat_id: {chat_id_str} "
+            f"| user_id: {user_id} | model: {model_preference}"
+        )
 
-        # save user message
-        Message.objects.create(chat=chat, role="user", content=user_message, emotional_state=response.get("emotional_state", dict()), safety_flag=None)
-
-        # save AI reply
-        cleaned_response = (response.get("content", "")).replace("\n", "")
-        ai_message = Message.objects.create(chat=chat, role="assistant", content=cleaned_response, emotional_state=response.get("emotional_state", dict()), safety_flag=None)
-
-        # update chat's modify_date
-        chat.save()
+        try:
+            cleaned_response = run_agent(
+                user_id=user_id,
+                chat_id=chat_id_str,
+                user_message=user_message,
+                model_preference=model_preference,
+            )
+        except Exception as e:
+            logger.error(f"Agent call failed | chat_id: {chat_id_str} | error: {e}")
+            return Response(
+                {"error": "Something went wrong processing your message."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         return Response({"reply": cleaned_response})

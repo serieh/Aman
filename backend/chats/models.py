@@ -26,3 +26,50 @@ class Message(models.Model):
 
     class Meta:
         db_table = "messages"
+
+
+class Summary(models.Model):
+    SAFETY_CHOICES = [
+        ("RED", "RED"),
+        ("ORANGE", "ORANGE"),
+        ("YELLOW", "YELLOW"),
+        ("GRAY", "GRAY"),
+    ]
+
+    summary_id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+
+    chat = models.ForeignKey(
+        Chat,
+        on_delete=models.CASCADE,
+        db_column="chat_id",
+        related_name="summaries"
+    )
+
+    content = models.TextField()
+
+    emotional_state = models.JSONField(
+        blank=True,
+        null=True
+    )
+
+    safety_flag = models.CharField(
+        max_length=10,
+        choices=SAFETY_CHOICES,
+        blank=True,
+        null=True
+    )
+
+    version = models.IntegerField(default=1)
+
+    creation_date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "summaries"
+        # ordering = ["-version"]
+
+    def __str__(self):
+        return f"Summary v{self.version} - {self.chat.chat_id}"

@@ -29,7 +29,8 @@ class MessageRequestSerializer(serializers.Serializer):
     content = serializers.CharField(max_length=1000, required=True)
     model   = serializers.ChoiceField(
         choices=["1", "2"],
-        default="2"
+        default="2",
+        required=False,
     )
     
     
