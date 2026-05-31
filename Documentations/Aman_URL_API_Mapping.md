@@ -295,6 +295,7 @@ All REST endpoints operate on JSON requests/responses and are standardized under
           "content": "I've been feeling really anxious about tomorrow.",
           "creation_date": "2026-05-21T19:09:00Z",
           "emotional_state": {"emotion": "anxiety", "confidence": 0.88},
+          "note": null,
           "safety_flag": null
         },
         {
@@ -303,6 +304,7 @@ All REST endpoints operate on JSON requests/responses and are standardized under
           "content": "It is completely understandable to feel overwhelmed when thinking about the future...",
           "creation_date": "2026-05-21T19:10:00Z",
           "emotional_state": null,
+          "note": "User is experiencing anticipatory anxiety about an upcoming event.",
           "safety_flag": null
         }
       ]
@@ -328,7 +330,7 @@ All REST endpoints operate on JSON requests/responses and are standardized under
     ```
     *   `content`: The textual prompt from the user (string, maximum 1000 characters).
     *   `model`: The preferred Ollama model tier (optional choice).
-        *   `"1"`: Gemma-4 Thinking Model (`gemma4:31b`) - higher quality, slower reasoning.
+        *   `"1"`: Gemma-4 Thinking Model (`gemma4:26b`) - higher quality, slower reasoning.
         *   `"2"` (Default): Gemma-4 Fast Model (`gemma4:e2b`) - speedy response times.
 *   **Success Response (`200 OK`)**:
     ```json

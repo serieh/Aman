@@ -1,0 +1,120 @@
+### 1. RAG (Retrieval-Augmented Generation) Effectiveness
+
+*
+**Technique:** Use the RAGAS (RAG Assessment) framework methodology to evaluate the BAAI/bge-m3 embedding model and Qdrant vector database.
+
+
+*
+**Purpose:** This measures how accurately Aman retrieves psychological resources and utilizes them to answer user queries without hallucinating.
+
+
+* **Key Measures:**
+*
+**Context Precision:** Evaluates whether the system retrieves the correct context.
+
+
+*
+**Context Recall:** Measures the system's ability to retrieve all relevant information.
+
+
+*
+**Answer Relevance:** Assesses if Aman's answer directly addresses the user's prompt based on the context retrieved.
+
+
+*
+**Hallucination Rate:** Ensures the model does not invent false information.
+
+
+
+
+
+### 2. Conversational Quality & Empathy
+
+*
+**Technique:** Utilize Human-in-the-loop (HITL) evaluation alongside LLM-as-a-Judge, which uses a superior model to grade Aman's outputs.
+
+
+*
+**Purpose:** Responses are graded on a scale of 1 to 5 based on empathy, conversational flow, and adherence to therapeutic guidelines.
+
+
+* **Key Measures:**
+*
+**Empathy Score:** Measures how well the agent validates the user's emotions.
+
+
+*
+**Bilingual Consistency:** Evaluates if Aman maintains context and persona when the user switches between English and Arabic.
+
+
+*
+**Non-Directive Guidance:** Verifies that the system successfully avoids giving direct medical advice.
+
+
+*
+**Tone Appropriateness:** Confirms that a calm, neutral, and supportive tone is maintained.
+
+
+
+
+
+### 3. Safety Firewall & Moderation Accuracy
+
+*
+**Technique:** Apply a Confusion Matrix and Classification Accuracy to the safety pipeline.
+
+
+*
+**Purpose:** This evaluates the firewall's ability to intercept and categorize inputs into safety flags (RED, ORANGE, YELLOW, GRAY) to detect crisis situations without falsely flagging benign emotional distress.
+
+
+* **Key Measures:**
+* Track the **Precision**, **Recall**, and **False Positive Rate** for each safety flag.
+
+
+* Prioritize a high Recall for RED flags (severe/crisis situations) to ensure no critical mental health crisis is ignored.
+
+
+
+
+
+### 4. System Performance & Latency
+
+*
+**Technique:** Conduct Load Testing and Profiling.
+
+
+*
+**Purpose:** Because Aman guarantees privacy by running local LLMs and Vector DBs on consumer-grade hardware (like 16GB VRAM GPUs), you must evaluate memory consumption and response latency.
+
+
+* **Key Measures:**
+*
+**Time to First Token (TTFT):** Measures how long it takes before the user sees the first word via the Streaming API.
+
+
+*
+**Background Summarization Latency:** Measures the time taken by the background model to compress older messages.
+
+
+*
+**GPU VRAM Peak Usage:** Tracks memory to ensure it stays strictly within hardware limits.
+
+
+*
+**RAG Vector Search Time:** Evaluates the query speed of the Qdrant database.
+
+
+
+
+
+---
+
+**Tips for Your Documentation Presentation:**
+
+*
+**Visuals:** In your graduation book, convert your safety evaluation tables into a simple bar chart, and use a line graph to display system latency over time.
+
+
+*
+**Defending Your Results:** If examiners ask why Arabic RAG precision might be slightly lower than English, you can justify it by explaining that Arabic has complex morphological structures and dialects, though the BAAI/bge-m3 model mitigates this effectively.

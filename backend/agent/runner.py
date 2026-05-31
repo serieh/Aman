@@ -1,12 +1,13 @@
 import threading
 from django.db import close_old_connections
 from langchain_core.messages import SystemMessage, HumanMessage
-
+from chats.models import Chat
 from logger import get_logger
 from agent.memory.history import load_history, save_message, update_chat_modify_date
 from agent.graph import GRAPH
 from agent.llm import title_generator
 from agent.prompts.builder import build_system_prompt
+from agent.emotion_estimator import estimate_emotion
 
 
 logger = get_logger(__name__)
@@ -19,8 +20,6 @@ def _generate_title_background(user_message: str, chat_id: str):
     Background thread target: generates a chat title via LLM and saves it.
     Uses Django ORM (thread-safe) for the DB update.
     """
-    from chats.models import Chat
-
     logger.debug(f"Chat title generation requested | chat_id: {chat_id}")
     try:
         title = title_generator(user_message)
@@ -36,23 +35,10 @@ def _generate_title_background(user_message: str, chat_id: str):
         close_old_connections()
 
 
-def run_agent(
-    user_id: str,
-    chat_id: str,
-    user_message: str,
-    # emotion_context: dict | None = None,
-    safety_flag: str | None = None,
-    model_preference: str = "2" 
-) -> str:
-
-    log_meta = f"Agent runner started | chat_id: {chat_id} | id: {user_id}"
-    if safety_flag:
-        log_meta += f" | safety_flag: {safety_flag}"
-    logger.info(log_meta)
+def run_agent(user_id: str,chat_id: str,user_message: str,model_preference: str = "2" ) -> str:
+    logger.info(f"Agent runner started | chat_id: {chat_id} | id: {user_id}")
 
     try:
-        from chats.models import Chat
-
         history = load_history(chat_id)
 
         if not history:
@@ -71,46 +57,42 @@ def run_agent(
         else:
             logger.debug(f"History exists, skipping title generation | chat_id: {chat_id}")
         
+        emotion = estimate_emotion(user_message)
+        logger.debug(f"Emotion estimation completed | chat_id: {chat_id} | emotion: {emotion}")
+        
         messages = [
             SystemMessage(content=SYSTEM_PROMPT), 
             *history,                               
             HumanMessage(content=user_message),
+            HumanMessage(content=f"Emotion: {emotion}")
         ]
-        
+    
         logger.debug(f"Invoking LangGraph | chat_id: {chat_id} | context_messages: {len(messages)}")
 
         result = GRAPH.invoke({
             "messages": messages,
             "user_id": user_id,
             "chat_id": chat_id,
-            # "emotion_context": emotion_context,
             "model_preference": model_preference,
         })
-
         response = result.get("response") or {}
-
         logger.debug(f"Persisting user and assistant messages | chat_id: {chat_id}")
         
         save_message(
             chat_id,
             role="user",
             content=user_message,
-            emotional_state=response.get("emotional_state", dict()),
-            safety_flag=safety_flag,
+            emotional_state=emotion,
+            note=response.get("note", None),
+            safety_flag=False,
         )
 
         cleaned_response = (response.get("content", "")).replace("\n", "")
-
-        save_message(
-            chat_id,
-            role="assistant",
-            content=cleaned_response,
-        )
+        save_message(chat_id, role="assistant", content=cleaned_response)
         
         update_chat_modify_date(chat_id)
         
         logger.info(f"Agent runner completed successfully | chat_id: {chat_id}")
-
         return cleaned_response
         
     except Exception as e:

@@ -5,7 +5,7 @@ from .models import Chat, Message
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Message
-        fields = ["message_id", "role", "content", "creation_date", "emotional_state", "safety_flag"]
+        fields = ["message_id", "role", "content", "creation_date", "emotional_state", "note", "safety_flag"]
 
 
 class ChatSerializer(serializers.ModelSerializer):

@@ -45,8 +45,9 @@ The database relies on a cascading relationship structure. Deleting a user purge
 | chat_id (FK -> chats) : UUID      |           | chat_id (FK -> chats) : UUID      |
 | role                  : VARCHAR   |           | content               : TEXT      |
 | content               : TEXT      |           | emotional_state       : JSONB     |
-| creation_date         : TIMESTAMPTZ|           | safety_flag           : VARCHAR   |
-| emotional_state       : JSONB     |           | version               : INTEGER   |
+| creation_date         : TIMESTAMPTZ|           | note                  : TEXT      |
+| emotional_state       : JSONB     |           | safety_flag           : VARCHAR   |
+| note                  : TEXT      |           | version               : INTEGER   |
 | safety_flag           : VARCHAR   |           | creation_date         : TIMESTAMPTZ|
 | is_active             : BOOLEAN   |           +-----------------------------------+
 +-----------------------------------+
@@ -100,6 +101,7 @@ The database relies on a cascading relationship structure. Deleting a user purge
         content         TEXT NOT NULL,
         creation_date   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
         emotional_state JSONB NULL, -- e.g. {"emotion": "anxiety", "confidence": 0.82}
+        note            TEXT NULL,
         safety_flag     VARCHAR(10) NULL, -- 'RED', 'ORANGE', 'YELLOW', 'GRAY'
         is_active       BOOLEAN NOT NULL DEFAULT TRUE
     );
@@ -116,6 +118,7 @@ The database relies on a cascading relationship structure. Deleting a user purge
         chat_id         UUID NOT NULL REFERENCES chats(chat_id) ON DELETE CASCADE,
         content         TEXT NOT NULL,
         emotional_state JSONB NULL, -- Aggregated emotional metrics across summarized history
+        note            TEXT NULL,
         safety_flag     VARCHAR(10) NULL CHECK (safety_flag IN ('RED', 'ORANGE', 'YELLOW', 'GRAY')),
         version         INTEGER NOT NULL DEFAULT 1, -- Rolling summary version
         creation_date   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()

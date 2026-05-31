@@ -1,14 +1,11 @@
 import json
-
 from django.db.models import Max
-
 from agent.llm import llm_summarize
 from logger import get_logger 
 
 logger = get_logger(__name__)
 
 def _format_messages_to_string(messages, summary) -> str:
-    """Format Django Message instances (and optional Summary) into a string for LLM."""
     logger.debug(f"Formatting {len(messages)} messages for summary")
 
     lines = []
@@ -27,7 +24,12 @@ def _format_messages_to_string(messages, summary) -> str:
         line = f"{role}: {content}"
 
         if emotional_state and isinstance(emotional_state, dict):
-            line += f" [Emotion: {emotional_state.get('emotion', '?')}, Confidence: {emotional_state.get('confidence', '?')}]"
+            line += f" [Emotions: {emotional_state}]"
+            
+        note = getattr(msg, "note", None)
+        if note:
+            line += f" [Note: {note}]"
+            
         if safety_flag:
             line += f" [Safety: {safety_flag}]"
 
@@ -40,10 +42,21 @@ def _format_messages_to_string(messages, summary) -> str:
                 summary_emotional = json.loads(summary_emotional)
             except (json.JSONDecodeError, TypeError):
                 summary_emotional = {}
+                
+        summary_note = getattr(summary, "note", None)
         
-        summary_line = f"Summary: {summary.content} \
-    [Emotion: {summary_emotional.get('emotion', '?')}, Confidence: {summary_emotional.get('confidence', '?')}]\
-    [Safety: {summary.safety_flag or '?'}"
+        summary_line = f"Summary: {summary.content}"
+        
+        if summary_emotional and isinstance(summary_emotional, dict):
+            top_emotions = ", ".join(f"{k}={int(v * 100)}%" for k, v in list(summary_emotional.items())[:3])
+            summary_line += f" [Emotions: {top_emotions}]"
+            
+        if summary_note:
+            summary_line += f" [Note: {summary_note}]"
+            
+        if summary.safety_flag:
+            summary_line += f" [Safety: {summary.safety_flag}]"
+            
         lines.insert(0, summary_line)
 
     logger.debug(f"Formatted messages into string with {len(lines)} lines for summary")
@@ -52,10 +65,6 @@ def _format_messages_to_string(messages, summary) -> str:
 
 
 def run_summarization_background(chat_id: str, message_rows: list, old_summary):
-    """
-    Background thread target: summarizes old messages and archives them.
-    Uses Django ORM (thread-safe) for all DB operations.
-    """
     from django.db import close_old_connections
     from chats.models import Message, Summary
 
@@ -80,6 +89,7 @@ def run_summarization_background(chat_id: str, message_rows: list, old_summary):
             chat_id=chat_id,
             content=summary["content"],
             emotional_state=summary.get("emotional_state"),
+            note=summary.get("note") if summary.get("note") else None,
             safety_flag=summary.get("safety_flag"),
             version=last_version + 1,
         )
