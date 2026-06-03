@@ -12,9 +12,9 @@ from langchain_community.document_loaders import PyPDFLoader, WebBaseLoader
 from langchain_core.documents import Document
 from pandas.errors import ParserError
 
-from backend.agent.tools.rag.knowledge.loader import get_pdf_sources
-from backend.agent.tools.rag.knowledge.URL_SOURCES import URL_SOURCES
-from config import (
+from agent.tools.rag.knowledge.loader import get_pdf_sources
+from agent.tools.rag.knowledge.URL_SOURCES import URL_SOURCES
+from agent.config import (
     DATASET_CHUNK_COLUMNS,
     DATASET_COLUMN_LABELS,
     DATASET_DROP_COLUMNS,

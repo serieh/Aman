@@ -39,9 +39,11 @@ EMBEDDINGS_VECTOR_SIZE = 1024
 EMBEDDINGS_DEVICE = "cuda" # "cpu" or "cuda"
 TOP_K_RESULTS = 10 # 3
 
-KNOWLEDGE_DIR = "backend/agent/rag/knowledge"
-PDF_DIR = KNOWLEDGE_DIR + "/pdfs"
-EXCEL_DIR = KNOWLEDGE_DIR + "/excel_files"
+from pathlib import Path
+
+KNOWLEDGE_DIR = Path(__file__).parent / "tools" / "rag" / "knowledge"
+PDF_DIR = KNOWLEDGE_DIR / "pdfs"
+EXCEL_DIR = KNOWLEDGE_DIR / "excel_files"
 
 DATASET_CHUNK_COLUMNS = [
     "Question Title",

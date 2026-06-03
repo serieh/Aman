@@ -1,4 +1,4 @@
-from config import PDF_DIR, EXCEL_DIR
+from agent.config import PDF_DIR, EXCEL_DIR
 
 def get_pdf_sources() -> dict[str, str]:
     sources: dict[str, str] = {}

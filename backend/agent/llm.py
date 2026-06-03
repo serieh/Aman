@@ -2,6 +2,8 @@ import json, re
 from langchain_ollama import ChatOllama
 from langchain_core.messages import SystemMessage, HumanMessage
 from pydantic import BaseModel
+from langchain.tools import tool
+from .tools.rag.RAG import run_rag
 
 from .config import LLM_THINKING_MODEL, LLM_FAST_MODEL, LLM_CONTEXT_WINDOW, LLM_REPEAT_PENALTY, LLM_MAX_RETRIES
 from .prompts.summary import SUMMARY_PROMPT
@@ -10,20 +12,44 @@ from logger import get_logger
 
 logger = get_logger(__name__)
 
+@tool
+def rag_search(query: str) -> str:
+    """
+    Search the RAG knowledge base for clinical guidelines, coping strategies, or relevant mental health information.
+    """
+    logger.info(f"RAG tool invoked with query: {query}")
+    result = run_rag(query)
+    passages = result.get("passages", [])
+    if not passages:
+        return "No relevant passages found in the knowledge base. Please answer the user's question using your general therapeutic knowledge and do your best to respond."
+    
+    formatted = "\n\n---\n\n".join(passages)
+    return (
+        "Here is the retrieved knowledge based on your query:\n\n"
+        f"{formatted}\n\n"
+        "Please read and integrate this information where see fit into your final response to the user."
+    )
+
+tools = [rag_search]
+
 class ResponseFormat(BaseModel):
     content: str
 
-class ThinkingLLMWrapper:
-    """Wrapper to handle models that output <think> blocks before their JSON/text response."""
+class LLMWrapper:
+    """Wrapper to handle tool calls or extract JSON/text response."""
     def __init__(self, llm):
         self.llm = llm
 
     def invoke(self, messages):
-        # invoke the unstructured llm
         response = self.llm.invoke(messages)
+        
+        # If the LLM invoked a tool, return the AIMessage directly
+        if getattr(response, "tool_calls", None):
+            return response
+            
         raw_text = response.content
         
-        # Strip <think> block
+        # Strip <think> block if present
         clean_text = re.sub(r"<think>.*?</think>", "", raw_text, flags=re.DOTALL).strip()
         if not clean_text:
             clean_text = raw_text # Fallback
@@ -50,8 +76,7 @@ llm_thinking = ChatOllama(
     keep_alive=-1,
     repeat_penalty=LLM_REPEAT_PENALTY,
 )
-
-structured_llm_thinking = ThinkingLLMWrapper(llm_thinking)
+structured_llm_thinking = LLMWrapper(llm_thinking.bind_tools(tools))
 
 llm_fast = ChatOllama(
     model=LLM_FAST_MODEL,
@@ -60,7 +85,7 @@ llm_fast = ChatOllama(
     repeat_penalty=LLM_REPEAT_PENALTY,
     think=False,
 )
-structured_llm_fast = llm_fast.with_structured_output(ResponseFormat)
+structured_llm_fast = LLMWrapper(llm_fast.bind_tools(tools))
 
 def llm_summarize(user_message: str):
     logger.info("LLM summarization requested")

@@ -7,7 +7,7 @@ from agent.emotion_estimator import estimate_emotion
 logger = get_logger(__name__)
 
 def _preload():
-    for model in [LLM_FAST_MODEL, LLM_THINKING_MODEL]:
+    for model in [LLM_FAST_MODEL]:
         try:
             requests.post("http://localhost:11434/api/generate", json={
                 "model": model,

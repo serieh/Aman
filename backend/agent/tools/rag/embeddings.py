@@ -3,21 +3,32 @@
 from __future__ import annotations
 import os
 from typing import Any
+from dotenv import load_dotenv
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
 
-from config import (
+import sys
+from pathlib import Path
+
+# Add the 'backend' directory to sys.path so 'agent' can be imported
+backend_dir = Path(__file__).resolve().parent.parent.parent.parent
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
+
+from agent.config import (
     EMBEDDINGS_DEVICE,
     EMBEDDINGS_MODEL,
     EMBEDDINGS_VECTOR_SIZE,
     QDRANT_COLLECTION
 )
-from ingest import ingest
-from knowledge.URL_SOURCES import URL_SOURCES
-from knowledge.loader import get_pdf_sources
+from agent.tools.rag.ingest import ingest
+from agent.tools.rag.knowledge.URL_SOURCES import URL_SOURCES
+from agent.tools.rag.knowledge.loader import get_pdf_sources
+
+load_dotenv()
 
 _EMBEDDING_MODEL: HuggingFaceEmbeddings | None = None
 pdf_sources = get_pdf_sources()
@@ -111,3 +122,6 @@ def ingest_sources_to_qdrant(
     return vectorstore
 
 get_qwen_embedding_model = get_embedding_model
+
+if __name__ == "__main__":
+    ingest_sources_to_qdrant()

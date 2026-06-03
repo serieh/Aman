@@ -1,9 +1,10 @@
 # agents/rag.py
 from __future__ import annotations
+import os
 from typing import Any
 from qdrant_client import QdrantClient
-from config import QDRANT_COLLECTION, TOP_K_RESULTS
-import embeddings, os
+from ...config import QDRANT_COLLECTION, TOP_K_RESULTS
+from . import embeddings
 
 _QDRANT_CLIENT: QdrantClient | None = None
 _EMBEDDING_MODEL: Any | None = None
