@@ -83,7 +83,6 @@ def run_agent(user_id: str,chat_id: str,user_message: str,model_preference: str 
             role="user",
             content=user_message,
             emotional_state=emotion,
-            note=response.get("note", None),
             safety_flag=False,
         )
 

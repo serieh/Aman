@@ -4,7 +4,7 @@ from langgraph.graph import StateGraph, END
 
 from .llm import structured_llm_thinking, structured_llm_fast
 from logger import get_logger
-from config import LLM_MAX_RETRIES
+from .config import LLM_MAX_RETRIES
 
 logger = get_logger(__name__)
 logger.info("Creator agent module loaded")

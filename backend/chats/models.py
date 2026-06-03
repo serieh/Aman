@@ -21,7 +21,6 @@ class Message(models.Model):
     content         = models.TextField()
     creation_date   = models.DateTimeField(auto_now_add=True)
     emotional_state = models.JSONField(null=True, blank=True)
-    note = models.TextField(null=True, blank=True)
     safety_flag     = models.CharField(max_length=10, null=True, blank=True)
     is_active       = models.BooleanField(default=True)
 
@@ -56,8 +55,6 @@ class Summary(models.Model):
         blank=True,
         null=True
     )
-
-    note = models.TextField(null=True, blank=True)
 
     safety_flag = models.CharField(
         max_length=10,

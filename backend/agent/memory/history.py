@@ -43,10 +43,6 @@ def load_history(chat_id: str) -> list:
             if isinstance(emotion, dict) and emotion:
                 top_emotions = ", ".join(f"{k}={int(v * 100)}%" for k, v in list(emotion.items())[:3])
                 content += f"\n[User emotions during previous conversations: {top_emotions}]"
-                
-        if getattr(last_summary, "note", None):
-            content += f"\n[Note: {last_summary.note}]"
-            
         history.append(SystemMessage(content=content))
 
     for row in rows:
@@ -62,10 +58,6 @@ def load_history(chat_id: str) -> list:
                 if isinstance(emotion, dict) and emotion:
                     top_emotions = ", ".join(f"{k}={int(v * 100)}%" for k, v in list(emotion.items())[:3])
                     content += f"\n[User emotions during this message: {top_emotions}]"
-            
-            if getattr(row, "note", None):
-                content += f"\n[Note: {row.note}]"
-                
             history.append(HumanMessage(content=content))
             
         elif row.role == "assistant":
@@ -94,7 +86,6 @@ def save_message(
     role: str,
     content: str,
     emotional_state: dict | None = None,
-    note: str | None = None,
     safety_flag: str | None = None,
 ):
 
@@ -112,7 +103,6 @@ def save_message(
         role=role,
         content=content,
         emotional_state=emotional_state if emotional_state else None,
-        note=note,
         safety_flag=safety_flag,
         is_active=True,
     )
