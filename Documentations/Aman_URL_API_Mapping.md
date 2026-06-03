@@ -295,7 +295,6 @@ All REST endpoints operate on JSON requests/responses and are standardized under
           "content": "I've been feeling really anxious about tomorrow.",
           "creation_date": "2026-05-21T19:09:00Z",
           "emotional_state": {"emotion": "anxiety", "confidence": 0.88},
-          "note": null,
           "safety_flag": null
         },
         {
@@ -304,7 +303,6 @@ All REST endpoints operate on JSON requests/responses and are standardized under
           "content": "It is completely understandable to feel overwhelmed when thinking about the future...",
           "creation_date": "2026-05-21T19:10:00Z",
           "emotional_state": null,
-          "note": "User is experiencing anticipatory anxiety about an upcoming event.",
           "safety_flag": null
         }
       ]

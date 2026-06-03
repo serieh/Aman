@@ -23,8 +23,8 @@ Aman is a bilingual (Arabic/English) AI-powered Emotional Wellness Support Agent
 
 **Core constraints:**
 - LLM runs via Ollama; future support for cloud models like deepseek-v4 `[PLANNED]`
-- All user data stored in PostgreSQL `[IMPLEMENTED]`
-- Knowledge vectors stored in Qdrant `[IMPLEMENTED]`
+- All user data stored in PostgreSQL (via Docker) `[IMPLEMENTED]`
+- Knowledge vectors stored in Qdrant (via Docker) `[IMPLEMENTED]`
 - University project scope — functional over production-hardened
 
 ---
@@ -56,10 +56,9 @@ Every LLM response is parsed into a typed `ResponseFormat` object (defined in `b
 ```python
 class ResponseFormat(BaseModel):
     content: str           # The actual reply to the user
-    note: str              # A brief internal note about the user's emotional state or situation
 ```
 
-The `content` field is what gets sent to the user. The `note` is a brief text observation that gets stored in the database. The emotional state itself is handled separately by a dedicated emotion estimator model.
+The `content` field is what gets sent to the user. The emotional state itself is handled separately by a dedicated emotion estimator model.
 
 ---
 
@@ -147,8 +146,8 @@ Aman uses two LLM tiers, selected per request via the `model` parameter in reque
 
 | Tier | Model | Use Case | Ollama Setting |
 |---|---|---|---|
-| `"1"` (thinking) | `gemma4:26b` | Complex emotional conversations, nuanced responses | `think=True` (default) |
-| `"2"` (fast) | `gemma4:e2b` | Quick exchanges, summarization, lower latency | `think=False` |
+| `"1"` (thinking) | `gemma4:26b` | Complex emotional conversations, nuanced responses | `think=True` (default) - Loaded dynamically to save VRAM |
+| `"2"` (fast) | `gemma4:e2b` | Quick exchanges, summarization, lower latency | `think=False` - Auto-preloads |
 
 Both models are configured with:
 - `num_ctx: 4096` — context window
@@ -559,9 +558,9 @@ All routes mapped in Django apps are detailed in `URL_API_Mapping.md`.
 - **Authentication**: JWT (JSON Web Tokens) via `djangorestframework-simplejwt`
 - **Agent Orchestrator**: LangGraph + LangChain Core
 - **LLM Engine**: Ollama (running locally) or use cloud (like: Deepseek-V4)
-- **Vector Database**: Qdrant (running locally on localhost:6333)
+- **Vector Database**: Qdrant (running locally via Docker on localhost:6333)
 - **RAG Embedding Model**: BAAI/bge-m3 (1024-dim, multilingual) or google embeding 2 (if fesable)
 - **Crisis Embedding Model**: all-MiniLM-L6-v2 (384-dim, lightweight) or google embeding 2 (if fesable)
-- **Relational Database**: PostgreSQL (accessed via Django ORM)
+- **Relational Database**: PostgreSQL (accessed via Django ORM, running via Docker)
 - **Logger**: Python standard `logging` (custom configured in `backend/logger.py`)
 - **Package Manager**: UV

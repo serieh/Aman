@@ -22,6 +22,7 @@ The physical structure of the workspace is organized into three major zones:
 ├── README.md                           # Quick-start setup & execution guide
 ├── pyproject.toml                      # Modern Python packaging configuration (uv/pep-518)
 ├── uv.lock                             # Strict python dependency lockfile (managed by uv)
+├── docker-compose.yml                  # Docker services definition (PostgreSQL, Qdrant)
 ├── Documentations/                     # Technical specifications, schema, and API guides
 │   ├── Aman_DB_Tables.md               # Precise database schema & cascade mapping
 │   ├── Aman_Project_File.md            # Comprehensive system specification (v6)
@@ -186,7 +187,7 @@ A dual-stage firewall protecting both input and output.
 The RAG (Retrieval-Augmented Generation) infrastructure operates as a separate ingestion layer and runtime search tool to ground the agent in verified mental health and regional guidelines.
 
 ### 4.1 Vector Storage Layout
-*   **Vector Database**: Qdrant running locally at `localhost:6333`.
+*   **Vector Database**: Qdrant running locally via Docker at `localhost:6333`.
 *   **Embedding Model (RAG)**: BAAI/bge-m3 (1024 dimensions, L2-normalized) or cloud alternative (Google Embeddings 2).
 *   **Embedding Model (Crisis)**: all-MiniLM-L6-v2 (384 dimensions) or cloud alternative (Google Embeddings 2).
 *   **Collections**:
@@ -258,7 +259,7 @@ sequenceDiagram
     end
     
     LLM-->>Graph: Return Structured JSON / Parsed Plain Text (ResponseFormat)
-    Graph-->>Django: Return Content & Note
+    Graph-->>Django: Return Content
 
     rect rgb(255, 240, 240)
         Note over Django,Safety: Stage 2: Output Safety Check
