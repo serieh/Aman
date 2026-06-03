@@ -4,6 +4,7 @@ from langgraph.graph import StateGraph, END
 
 from .llm import structured_llm_thinking, structured_llm_fast
 from logger import get_logger
+from config import LLM_MAX_RETRIES
 
 logger = get_logger(__name__)
 logger.info("Creator agent module loaded")
@@ -21,8 +22,6 @@ FALLBACK_RESPONSE = {
     "emotional_state": {"emotion": "unknown", "confidence": 0.0},
 }
 
-MAX_RETRIES = 3
-
 def agent_node(state: AgentState):
     chat_id = state.get("chat_id", "unknown")
     model_preference = state.get("model_preference", "2")
@@ -30,7 +29,7 @@ def agent_node(state: AgentState):
 
     llm = structured_llm_thinking if model_preference == "1" else structured_llm_fast
 
-    for attempt in range(1, MAX_RETRIES + 1):
+    for attempt in range(1, LLM_MAX_RETRIES + 1):
         try:
             response = llm.invoke(state["messages"])
             resp_dict = response.model_dump()
@@ -39,8 +38,8 @@ def agent_node(state: AgentState):
             return {"response": resp_dict}
 
         except Exception as e:
-            logger.warning(f"Agent node attempt {attempt}/{MAX_RETRIES} failed | chat_id: {chat_id} | error: {str(e)}")
-            if attempt == MAX_RETRIES:
+            logger.warning(f"Agent node attempt {attempt}/{LLM_MAX_RETRIES} failed | chat_id: {chat_id} | error: {str(e)}")
+            if attempt == LLM_MAX_RETRIES:
                 logger.error(f"Agent node exhausted retries, using fallback | chat_id: {chat_id}")
                 return {"response": FALLBACK_RESPONSE}
 

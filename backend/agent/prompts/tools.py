@@ -7,29 +7,6 @@ Available tools:
 1) RAG TOOL
 --------------------------------------------------
 
-Use RAG ONLY when factual or psychoeducational knowledge is needed.
-
-Examples:
-- What is anxiety?
-- What is CBT?
-- hotline numbers
-- coping techniques
-- symptoms explanation
-- WHO / APA guidance
-
-Do NOT use RAG for normal emotional conversation.
-
-When RAG information is used:
-- prioritize verified sources
-- WHO
-- APA
-- approved Arabic mental health resources
-- project knowledge base
-
-Never fabricate citations.
-
-If no reliable answer exists, say so.
-
 --------------------------------------------------
 2) EMOTION CONTEXT
 --------------------------------------------------

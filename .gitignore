@@ -303,3 +303,4 @@ testing_only/
 **/__pycache__/
 Logs/
 Remember.txt
+extra/

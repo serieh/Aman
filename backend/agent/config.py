@@ -4,6 +4,7 @@ LLM_THINKING_MODEL = "gemma4:26b"    # Higher quality, slower
 LLM_FAST_MODEL = "gemma4:e2b"        # Lower quality, faster
 LLM_CONTEXT_WINDOW = 4096   # 8192
 LLM_REPEAT_PENALTY = 1.15
+LLM_MAX_RETRIES = 3
 
 # ── Memory ───────────────────────────────────────────────────────────
 MAX_MESSAGES_BEFORE_SUMMARY = 40
@@ -30,3 +31,38 @@ EMOTION_RELEVANT_LABELS = [
     "embarrassment",
     "caring",
 ]
+
+# ── RAG / Knowledge Base ─────────────────────────────────────────────
+QDRANT_COLLECTION = "rag_knowledge"
+EMBEDDINGS_MODEL = "BAAI/bge-m3"
+EMBEDDINGS_VECTOR_SIZE = 1024
+EMBEDDINGS_DEVICE = "cuda" # "cpu" or "cuda"
+TOP_K_RESULTS = 10 # 3
+
+KNOWLEDGE_DIR = "backend/agent/rag/knowledge"
+PDF_DIR = KNOWLEDGE_DIR + "/pdfs"
+EXCEL_DIR = KNOWLEDGE_DIR + "/excel_files"
+
+DATASET_CHUNK_COLUMNS = [
+    "Question Title",
+    "Question",
+    "Answer",
+    "Hierarchical Diagnosis",
+]
+
+DATASET_COLUMN_LABELS = {
+    "Question Title": "العنوان",
+    "Question": "السؤال",
+    "Answer": "الإجابة",
+    "Hierarchical Diagnosis": "التشخيص",
+}
+
+DATASET_DROP_COLUMNS = {
+    "question number", "question_number", "q number", "q#", "id", "row",
+    "doctor", "doctor name", "physician", "specialist", "اسم الطبيب", "الطبيب",
+    "date", "location", "city", "country", "التاريخ", "الموقع", "المدينة",
+}
+
+PDF_MIN_WORDS = 40
+PDF_MAX_WORDS = 350
+PDF_OVERLAP_WORDS = 30
