@@ -8,9 +8,10 @@ from __future__ import annotations
 import hashlib, re
 from typing import Iterable
 import pandas as pd
-from langchain_community.document_loaders import PyPDFLoader, WebBaseLoader
+from langchain_community.document_loaders import PyPDFLoader, WebBaseLoader, TextLoader
 from langchain_core.documents import Document
 from pandas.errors import ParserError
+from pathlib import Path
 
 from agent.tools.rag.knowledge.loader import get_pdf_sources
 from agent.tools.rag.knowledge.URL_SOURCES import URL_SOURCES
@@ -224,6 +225,28 @@ def load_urls(url_sources: dict) -> list[Document]:
     return docs
 
 
+def load_text_files() -> list[Document]:
+    docs: list[Document] = []
+    knowledge_dir = Path(__file__).parent / "knowledge"
+    for file_path in knowledge_dir.glob("*.md"):
+        print(f"Loading Markdown [{file_path.name}]: {file_path}")
+        try:
+            loader = TextLoader(str(file_path), encoding="utf-8")
+            pages = loader.load()
+        except Exception as exc:
+            print(f"  Skipping {file_path}: {exc}")
+            continue
+        for page in pages:
+            cleaned = clean_text(page.page_content)
+            if len(cleaned.split()) < PDF_MIN_WORDS:
+                continue
+            page.page_content = cleaned
+            page.metadata["source_name"] = file_path.stem
+            page.metadata["source_type"] = "markdown"
+            docs.append(page)
+    return docs
+
+
 # ─── Semantic chunking (PDFs / URLs) ─────────────────────────────────────────
 
 def _split_paragraphs(text: str) -> list[str]:
@@ -364,6 +387,7 @@ def ingest(
     # docs.extend(load_datasets(csv_sources))
     docs.extend(load_pdfs(pdf_sources))
     docs.extend(load_urls(url_sources))
+    docs.extend(load_text_files())
 
     chunks = chunk_publication_documents(docs)
     chunks = _dedupe_documents(chunks)

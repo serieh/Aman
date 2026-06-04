@@ -1,7 +1,9 @@
 import threading
+from datetime import date
 from django.db import close_old_connections
 from langchain_core.messages import SystemMessage, HumanMessage
 from chats.models import Chat
+from users.models import User
 from logger import get_logger
 from agent.memory.history import load_history, save_message, update_chat_modify_date
 from agent.graph import GRAPH
@@ -72,11 +74,29 @@ def run_agent(user_id: str,chat_id: str,user_message: str,model_preference: str 
         if safety_tier:
             logger.info(f"Safety gate triggered | tier: {safety_tier} | chat_id: {chat_id}")
 
+        # ── Fetch User Context ─────────────────────────────────────
+        try:
+            user = User.objects.get(id=user_id)
+            age = (date.today() - user.birthdate).days // 365 if user.birthdate else "unknown"
+            user_context = (
+                f"--------------------------------------------------\n"
+                f"USER PROFILE\n"
+                f"--------------------------------------------------\n"
+                f"Name: {user.name}\n"
+                f"Age: {age}\n"
+                f"Gender: {user.gender}\n"
+                f"Country Code: {user.country}\n"
+            )
+        except Exception as e:
+            logger.error(f"Failed to fetch user {user_id} | error: {e}")
+            user_context = ""
+
         # ── Dynamic System Prompt (safety + emotion combined) ──────
         system_prompt = build_system_prompt(
             emotion=emotion,
             safety_flag=safety_tier,
             grey_area_categories=category_hints,
+            user_context=user_context,
         )
 
         messages = [

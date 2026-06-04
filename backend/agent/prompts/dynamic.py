@@ -75,8 +75,8 @@ _SAFETY_TIER_INSTRUCTIONS: dict[str, str] = {
         "2) Respond calmly, directly, and with compassion.\n"
         "3) Ask if they are safe right now.\n"
         "4) Do NOT use guilt, shame, moral judgment, or dismissive language.\n"
-        "5) Do NOT provide hotline numbers or emergency numbers.\n"
-        "6) Do NOT use routing scripts (e.g. 'find someone you trust').\n"
+        "5) If the user is receptive to help, you MUST use the `rag_search` tool to look up verified emergency numbers for their country. Do NOT rely on internal knowledge or memory for phone numbers.\n"
+        "6) Present the numbers empathetically based on their emotion. ONLY provide numbers retrieved from the `rag_search` tool.\n"
         "7) Stay present. Listen. Be the sanctuary."
     ),
     "GRAY": (

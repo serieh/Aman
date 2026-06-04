@@ -10,7 +10,7 @@ CRISIS_KEYWORDS = [
     "بدي أموت", "بدي اموت", "نفسي اموت", "نفسي أموت",
     "أذي نفسي", "اذي نفسي", "اقتل حالي", "أقتل حالي", "رايح اقتل", "راح اقتل",
     "kill myself", "suicide", "self-harm", "end my life", "want to die",
-    "hurt myself", "hurt someone", "kill someone",
+    "hurt myself", "hurt someone", "kill someone", "end it all",
 ]
 
 # ── Safety System ────────────────────────────────────────────────────

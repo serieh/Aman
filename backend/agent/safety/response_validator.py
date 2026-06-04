@@ -31,13 +31,21 @@ REFUSAL_PATTERNS = [
     "this is inappropriate",
 ]
 
-HOTLINE_PATTERNS = [
-    re.compile(r"\b(911|112|999|988|937|0800|800[\s\-]?\d)", re.I),
-    re.compile(r"\b(hotline|helpline|suicide\s*line|crisis\s*line|emergency\s*(number|line|services))", re.I),
-    re.compile(r"(خط\s*(الطوارئ|المساعدة|الساخن|الدعم)|اتصل\s*ب(ـ)?|اتصلي\s*ب(ـ)?)", re.I),
-    re.compile(r"(call\s*(911|112|999|emergency)|contact\s*emergency)", re.I),
-    re.compile(r"\d{3}[\s\-]?\d{3}[\s\-]?\d{3,4}"),
+VERIFIED_NUMBERS = {
+    "920033360", "937", "997", "999", "8004673", "800111", "800725462", 
+    "998", "16328", "123", "110", "96265502911", "0096265502911", "911", "1564", 
+    "96524621770", "0096524621770", "96524622000", "0096524622000", "112", "16000", "8000000", 
+    "96824607555", "0096824607555", "9999", "80001488", "38447588", "66710901",
+    "988", "111", "131114"
+}
+
+HOTLINE_KEYWORDS = [
+    re.compile(r"\b(hotline|helpline|suicide\s*line|crisis\s*line|emergency\s*(number|line|services))\b", re.I),
+    re.compile(r"(خط\s*(الطوارئ|المساعدة|الساخن|الدعم))", re.I),
 ]
+
+# Catch phone numbers (e.g. 1-800-273-8255, +962 6 550 2911, or 3+ digit short codes)
+PHONE_NUMBER_PATTERN = re.compile(r"(?:\+?\d{1,4}[\s\-]?)?(?:\d{3,}[\s\-]?){2,}\d{2,}|\b(911|112|999|988|937|997|998|123|110|1564)\b")
 
 ROUTING_SCRIPT_PATTERNS = [
     re.compile(r"شخص\s*(تثق|قريب)", re.I),
@@ -62,8 +70,15 @@ def contains_routing_script(response_text: str) -> bool:
     return any(p.search(response_text) for p in ROUTING_SCRIPT_PATTERNS)
 
 
-def contains_hotline_content(response_text: str) -> bool:
-    return any(p.search(response_text) for p in HOTLINE_PATTERNS)
+def get_unverified_numbers(response_text: str) -> list[str]:
+    unverified = []
+    for match in PHONE_NUMBER_PATTERN.finditer(response_text):
+        raw_num = match.group(0)
+        # Normalize: remove non-digits
+        normalized = re.sub(r"\D", "", raw_num)
+        if normalized and normalized not in VERIFIED_NUMBERS:
+            unverified.append(raw_num)
+    return unverified
 
 
 def validate_response(
@@ -91,19 +106,25 @@ def validate_response(
             if pattern in text_lower:
                 return {"safe": False, "reason": f"Refusal pattern detected: '{pattern}'"}
 
-    if contains_hotline_content(response_text):
-        return {"safe": False, "reason": "Hotline or emergency number content is not allowed."}
+    # Number verification logic
+    unverified_nums = get_unverified_numbers(response_text)
+    if unverified_nums:
+        return {"safe": False, "reason": f"Unverified phone numbers detected: {unverified_nums}"}
 
-    if not crisis_flag and contains_routing_script(response_text):
-        return {
-            "safe": False,
-            "reason": "Routing script detected on non-crisis turn — use sanctuary listening instead.",
-        }
+    # If it's NOT a crisis, we don't want hotlines or routing scripts at all
+    if not crisis_flag:
+        if any(p.search(response_text) for p in HOTLINE_KEYWORDS):
+            return {"safe": False, "reason": "Hotline keywords are not allowed outside of a crisis."}
+        
+        if contains_routing_script(response_text):
+            return {
+                "safe": False,
+                "reason": "Routing script detected on non-crisis turn — use sanctuary listening instead.",
+            }
 
     if len(response_text.strip()) < 5:
         return {"safe": False, "reason": "Response too short."}
 
     return {"safe": True, "reason": None}
-
 
 contains_grey_area_routing_script = contains_routing_script

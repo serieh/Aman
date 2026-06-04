@@ -22,6 +22,7 @@ def build_system_prompt(
     emotion=None,
     safety_flag=None,
     grey_area_categories: str = "",
+    user_context: str = "",
 ):
     log_meta = f"System prompt constructed | language: {language}"
     if emotion:
@@ -34,7 +35,10 @@ def build_system_prompt(
     logger.debug(log_meta)
 
     try:
-        return "\n\n".join([
+        parts = []
+        if user_context:
+            parts.append(user_context)
+        parts.extend([
             CORE_PROMPT,
             SAFETY_PROMPT,
             CULTURAL_PROMPT,
@@ -46,6 +50,7 @@ def build_system_prompt(
                 grey_area_categories=grey_area_categories,
             )
         ])
+        return "\n\n".join(parts)
     except Exception as e:
         # CORRECT LOG: Catching any issues if dynamic context injection fails
         logger.error(f"Failed to build system prompt | error: {str(e)}")
