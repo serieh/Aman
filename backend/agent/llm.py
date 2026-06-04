@@ -68,6 +68,11 @@ class LLMWrapper:
         # Fallback: use the cleaned text as content directly
         return ResponseFormat(content=clean_text)
 
+    def stream(self, messages):
+        # Directly yield chunks for streaming, frontend handles parsing/think blocks
+        for chunk in self.llm.stream(messages):
+            yield chunk
+
 logger.info("Building LLMs")
 
 llm_thinking = ChatOllama(

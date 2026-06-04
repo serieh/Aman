@@ -83,18 +83,18 @@ class MessageView(APIView):
             f"| user_id: {user_id} | model: {model_preference}"
         )
 
+        from django.http import StreamingHttpResponse
         try:
-            cleaned_response = run_agent(
+            generator = run_agent(
                 user_id=user_id,
                 chat_id=chat_id_str,
                 user_message=user_message,
                 model_preference=model_preference,
             )
+            return StreamingHttpResponse(generator, content_type='text/plain')
         except Exception as e:
             logger.error(f"Agent call failed | chat_id: {chat_id_str} | error: {e}")
             return Response(
                 {"error": "Something went wrong processing your message."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
-        return Response({"reply": cleaned_response})

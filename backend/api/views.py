@@ -16,11 +16,6 @@ class LoginPageView(View):
         return render(request, "login.html")
 
 
-class RegisterPageView(View):
-    def get(self, request):
-        return render(request, "register.html")
-
-
 # ── API ───────────────────────────────────────────────────────
 
 class RegisterView(APIView):

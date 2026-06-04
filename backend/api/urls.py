@@ -5,9 +5,7 @@ from . import views
 prefix ="api/v1/auth/"
 
 urlpatterns = [
-    # Pages
     path("login/",    views.LoginPageView.as_view()),
-    path("register/", views.RegisterPageView.as_view()),
 
     # API
     path(f"{prefix}register/", views.RegisterView.as_view()),

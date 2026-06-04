@@ -409,8 +409,22 @@
           return;
         }
 
-        const data = await res.json();
-        addMessageBubble("assistant", data.reply);
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        
+        let assistantDiv = document.createElement("div");
+        assistantDiv.className = "msg assistant";
+        assistantDiv.innerHTML = `<div class="msg-role">assistant</div><span class="content"></span>`;
+        msgBox.appendChild(assistantDiv);
+        const contentSpan = assistantDiv.querySelector(".content");
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          contentSpan.innerHTML += escapeHtml(chunk).replace(/\n/g, "<br>");
+          scrollToBottom();
+        }
       } catch (err) {
         console.error("Send message error:", err);
         showToast("Network error while sending message");

@@ -7,7 +7,7 @@ from users.models import User
 from logger import get_logger
 from agent.memory.history import load_history, save_message, update_chat_modify_date
 from agent.graph import GRAPH
-from agent.llm import title_generator
+from agent.llm import title_generator, structured_llm_thinking, structured_llm_fast
 from agent.prompts.builder import build_system_prompt
 from agent.emotion_estimator import estimate_emotion
 from agent.safety.safety_runner import run_input_safety, run_output_safety
@@ -105,52 +105,16 @@ def run_agent(user_id: str,chat_id: str,user_message: str,model_preference: str 
             HumanMessage(content=user_message),
         ]
     
-        logger.debug(f"Invoking LangGraph | chat_id: {chat_id} | context_messages: {len(messages)}")
+        logger.debug(f"Streaming LLM directly | chat_id: {chat_id} | context_messages: {len(messages)}")
 
-        result = GRAPH.invoke({
-            "messages": messages,
-            "user_id": user_id,
-            "chat_id": chat_id,
-            "model_preference": model_preference,
-        })
-        response = result.get("response") or {}
-        cleaned_response = (response.get("content", "")).replace("\n", "")
+        llm = structured_llm_thinking if model_preference == "1" else structured_llm_fast
 
-        # ── Output Safety Gate (with retry) ────────────────────────
-        for attempt in range(1, SAFETY_MAX_OUTPUT_RETRIES + 1):
-            validation = run_output_safety(cleaned_response, crisis_flag, grey_area_flag)
-            if validation["safe"]:
-                break
-
-            logger.warning(
-                f"Response blocked (attempt {attempt}/{SAFETY_MAX_OUTPUT_RETRIES}) "
-                f"| reason: {validation['reason']} | chat_id: {chat_id}"
-            )
-
-            if attempt < SAFETY_MAX_OUTPUT_RETRIES:
-                # Retry with an explanation of what was blocked
-                retry_instruction = SystemMessage(content=(
-                    f"Your previous response was blocked by the safety system.\n"
-                    f"Reason: {validation['reason']}\n"
-                    f"Please regenerate a response that avoids the blocked pattern. "
-                    f"Stay empathetic and present with the user."
-                ))
-                messages_with_retry = messages + [retry_instruction]
-                result = GRAPH.invoke({
-                    "messages": messages_with_retry,
-                    "user_id": user_id,
-                    "chat_id": chat_id,
-                    "model_preference": model_preference,
-                })
-                response = result.get("response") or {}
-                cleaned_response = (response.get("content", "")).replace("\n", "")
-            else:
-                # All retries exhausted — use safe fallback
-                logger.error(f"Output safety exhausted retries | chat_id: {chat_id}")
-                cleaned_response = (
-                    "I'm here with you. Could you tell me a little more "
-                    "about what's on your mind?"
-                )
+        # Streaming loop
+        final_text = ""
+        for chunk in llm.stream(messages):
+            if chunk.content:
+                final_text += chunk.content
+                yield chunk.content
 
         # ── Persist Messages ───────────────────────────────────────
         logger.debug(f"Persisting user and assistant messages | chat_id: {chat_id}")
@@ -163,13 +127,11 @@ def run_agent(user_id: str,chat_id: str,user_message: str,model_preference: str 
             safety_flag=safety_tier,
         )
 
-        save_message(chat_id, role="assistant", content=cleaned_response)
-        
+        save_message(chat_id, role="assistant", content=final_text)
         update_chat_modify_date(chat_id)
         
         logger.info(f"Agent runner completed successfully | chat_id: {chat_id}")
-        return cleaned_response
         
     except Exception as e:
         logger.error(f"Agent runner failed | chat_id: {chat_id} | error: {str(e)}")
-        return "Sorry, something went wrong while processing your message."
+        yield "Sorry, something went wrong while processing your message."
