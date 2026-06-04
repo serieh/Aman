@@ -14,7 +14,7 @@ Aman Reformed is organized as a flat set of top-level Django packages under the 
 
 ```
 backend/
-├── backend/      → Project config, standard settings, and root URL routing
+├── core/         → Project config, standard settings, and root URL routing
 ├── api/          → App: Login/Register page templates; signup, login, and JWT blacklist APIs
 ├── users/        → App: User profile settings panel; user profile CRUD APIs
 ├── chats/        → App: Client dashboard, chat room interface; chat list, details, and agent trigger APIs
@@ -22,7 +22,7 @@ backend/
 ```
 
 ### 1.2 Root Routing Configuration
-The main system routing config in `backend/backend/urls.py` delegates URL parsing directly to each app-level routing file:
+The main system routing config in `backend/core/urls.py` delegates URL parsing directly to each app-level routing file:
 
 ```python
 from django.contrib import admin
@@ -51,7 +51,6 @@ prefix = "api/v1/auth/"
 urlpatterns = [
     # Pages
     path("login/",    views.LoginPageView.as_view()),
-    path("register/", views.RegisterPageView.as_view()),
 
     # API
     path(f"{prefix}register/", views.RegisterView.as_view()),
@@ -102,8 +101,7 @@ All REST endpoints operate on JSON requests/responses and are standardized under
 
 | Category | HTTP Method | URL Path | View Class | Purpose / Response |
 | :--- | :---: | :--- | :--- | :--- |
-| **Auth Pages** | `GET` | `/login/` | `LoginPageView` | Renders `login.html` form template |
-| **Auth Pages** | `GET` | `/register/` | `RegisterPageView` | Renders `register.html` form template |
+| **Auth Pages** | `GET` | `/login/` | `LoginPageView` | Renders combined `login.html` form template |
 | **Auth REST API** | `POST` | `/api/v1/auth/register/` | `RegisterView` | Signs up new user; returns JWT `access` & `refresh` |
 | **Auth REST API** | `POST` | `/api/v1/auth/login/` | `LoginView` | Authenticates credentials; returns JWT tokens |
 | **Auth REST API** | `POST` | `/api/v1/auth/refresh/` | `TokenRefreshView` | DRF SimpleJWT token refresh endpoint |
@@ -120,7 +118,7 @@ All REST endpoints operate on JSON requests/responses and are standardized under
 | **Chat REST API** | `POST` | `/api/v1/chats/` | `ChatListView` | Creates a new empty chat session |
 | **Chat REST API** | `GET` | `/api/v1/chats/<uuid:chat_id>/` | `ChatDetailView` | Fetches chat title and all active messages |
 | **Chat REST API** | `DELETE` | `/api/v1/chats/<uuid:chat_id>/` | `ChatDetailView` | Deletes specified chat session and all messages/summaries |
-| **Agent REST API** | `POST` | `/api/v1/chats/<uuid:chat_id>/message/` | `MessageView` | Sends message to AI agent; triggers memory and LLM |
+| **Agent REST API** | `POST` | `/api/v1/chats/<uuid:chat_id>/message/` | `MessageView` | Sends message to AI agent; streams real-time LLM response chunks |
 
 ---
 

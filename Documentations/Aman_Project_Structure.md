@@ -37,7 +37,7 @@ The physical structure of the workspace is organized into three major zones:
     ├── Logs/                           # Output directory for application logs (gitignored)
     │   └── aman.log                    # Main system log output file
     │
-    ├── backend/                        # Django Project Settings & Root Routing
+    ├── core/                           # Django Project Settings & Root Routing
     │   ├── __init__.py
     │   ├── settings.py                 # Core settings, database connection, and middleware
     │   ├── urls.py                     # Root URL routing configuration
@@ -112,7 +112,7 @@ The physical structure of the workspace is organized into three major zones:
 *   `Documentations/`: Houses core technical specification files, URL mapping matrixes, database DDLs, and references.
 *   `backend/.env`: Configures environment-specific variables including Django keys, PostgreSQL credentials, local Ollama URLs, and Qdrant instances.
 
-### 2.2 Django System Core (`backend/backend/`)
+### 2.2 Django System Core (`backend/core/`)
 This is the root configuration directory of the Django project.
 *   `settings.py`: Configures **JWT authentication** (`rest_framework_simplejwt`), custom User model mapping (`AUTH_USER_MODEL = "users.User"`), CORS settings (`corsheaders`), PostgreSQL database configuration (`DATABASES`), and static assets handling.
 *   `urls.py`: The root URL routing file. Delegates page routing and API routing by nesting app-level `urls.py` files.
@@ -123,7 +123,7 @@ This app handles user onboarding, sign-in pages, and JWT access/refresh token ge
 *   `serializers.py`: Defines `RegisterSerializer` (creates accounts, handles password encryption through Django ORM) and `LoginSerializer`.
 *   `urls.py`: Maps the login/register HTML pages and the JWT REST API endpoints (`/api/v1/auth/*`).
 *   `views.py`: 
-    *   *Pages*: `LoginPageView` and `RegisterPageView` render HTML templates.
+    *   *Pages*: `LoginPageView` renders the combined HTML template for both login and registration.
     *   *APIs*: `RegisterView` (signs up user, returns access/refresh tokens), `LoginView` (authenticates credentials, returns tokens), and `LogoutView` (blacklists refresh token and redirects to login).
 
 ### 2.4 Profile Management App (`backend/users/`)
@@ -291,8 +291,7 @@ All page views and REST endpoints are consolidated under Django apps, routing re
 
 | Category | Method | Path | View Class | Target / Purpose |
 | :--- | :---: | :--- | :--- | :--- |
-| **Auth Pages** | `GET` | `/login/` | `LoginPageView` | Renders Login Form |
-| **Auth Pages** | `GET` | `/register/` | `RegisterPageView` | Renders Signup Form |
+| **Auth Pages** | `GET` | `/login/` | `LoginPageView` | Renders combined Login/Registration Form |
 | **Auth API** | `POST` | `/api/v1/auth/register/` | `RegisterView` | Signs up user, generates JWT tokens |
 | **Auth API** | `POST` | `/api/v1/auth/login/` | `LoginView` | Validates login, issues JWT tokens |
 | **Auth API** | `POST` | `/api/v1/auth/refresh/` | `TokenRefreshView` | Standard simplejwt token refresher |
@@ -307,7 +306,7 @@ All page views and REST endpoints are consolidated under Django apps, routing re
 | **Chat API** | `POST` | `/api/v1/chats/` | `ChatListView` | Instantiates a new empty conversation session |
 | **Chat API** | `GET` | `/api/v1/chats/<uuid:chat_id>/` | `ChatDetailView` | Retrieves active chats history |
 | **Chat API** | `DELETE` | `/api/v1/chats/<uuid:chat_id>/` | `ChatDetailView` | Deletes a conversation session |
-| **Agent API** | `POST` | `/api/v1/chats/<uuid:chat_id>/message/` | `MessageView` | User prompt/audio entry; returns text & TTS audio |
+| **Agent API** | `POST` | `/api/v1/chats/<uuid:chat_id>/message/` | `MessageView` | User prompt/audio entry; streams real-time text & TTS audio |
 
 ---
 

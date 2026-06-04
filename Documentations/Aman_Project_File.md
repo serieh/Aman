@@ -97,7 +97,7 @@ Aman determines the user's emotional state from **two independent sources**:
               ┌──────────▼──────────┐
               │   Django Backend    │
               │   (ASGI / DRF API)  │
-              │                     │
+              │  <Streaming Output> │
               │  Auth / JWT Tokens  │  [IMPLEMENTED]
               └──────────┬──────────┘
                          │
@@ -419,7 +419,7 @@ backend/
 ├── Logs/                               # Runtime log outputs (gitignored)
 │   └── aman.log
 │
-├── backend/                            # Django System Core
+├── core/                               # Django System Core
 │   ├── settings.py                     # Root Django configurations
 │   ├── urls.py                         # Root URL routing table
 │   ├── asgi.py                         # ASGI asynchronous configuration
@@ -428,7 +428,7 @@ backend/
 ├── api/                                # App: Authentication Pages & REST APIs
 │   ├── serializers.py                  # Register/Login schema validators
 │   ├── urls.py                         # Auth URLs (/api/v1/auth/* and pages)
-│   └── views.py                        # Registers, Logins, and Token blacklisting
+│   └── views.py                        # LoginPageView renders the combined HTML template for login.
 │
 ├── users/                              # App: Profile management and user settings
 │   ├── models.py                       # User Model (UUID primary key "id")
@@ -548,7 +548,7 @@ All routes mapped in Django apps are detailed in `URL_API_Mapping.md`.
 - **GET/PUT/DELETE** `/api/v1/users/me/` — Profile management
 - **GET/POST** `/api/v1/chats/` — Chat list and instantiation
 - **GET/DELETE** `/api/v1/chats/<uuid:chat_id>/` — Retrieve conversation history or delete
-- **POST** `/api/v1/chats/<uuid:chat_id>/message/` — Send message and obtain agent response
+- **POST** `/api/v1/chats/<uuid:chat_id>/message/` — Send message and obtain real-time streamed agent response
 
 ---
 
