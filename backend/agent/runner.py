@@ -8,11 +8,12 @@ from agent.graph import GRAPH
 from agent.llm import title_generator
 from agent.prompts.builder import build_system_prompt
 from agent.emotion_estimator import estimate_emotion
+from agent.safety.safety_runner import run_input_safety, run_output_safety
+from agent.config import SAFETY_MAX_OUTPUT_RETRIES
 
 
 logger = get_logger(__name__)
-SYSTEM_PROMPT = build_system_prompt()
-logger.info("Agent runner initialized and system prompt built")
+logger.info("Agent runner initialized")
 
 
 def _generate_title_background(user_message: str, chat_id: str):
@@ -57,14 +58,31 @@ def run_agent(user_id: str,chat_id: str,user_message: str,model_preference: str 
         else:
             logger.debug(f"History exists, skipping title generation | chat_id: {chat_id}")
         
+        # ── Emotion Estimation ─────────────────────────────────────
         emotion = estimate_emotion(user_message)
         logger.debug(f"Emotion estimation completed | chat_id: {chat_id} | emotion: {emotion}")
-        
+
+        # ── Input Safety Gate ──────────────────────────────────────
+        safety = run_input_safety(user_message)
+        safety_tier = safety.get("safety_tier")
+        crisis_flag = safety.get("crisis_flag", False)
+        grey_area_flag = safety.get("grey_area_flag", False)
+        category_hints = safety.get("category_hints", "")
+
+        if safety_tier:
+            logger.info(f"Safety gate triggered | tier: {safety_tier} | chat_id: {chat_id}")
+
+        # ── Dynamic System Prompt (safety + emotion combined) ──────
+        system_prompt = build_system_prompt(
+            emotion=emotion,
+            safety_flag=safety_tier,
+            grey_area_categories=category_hints,
+        )
+
         messages = [
-            SystemMessage(content=SYSTEM_PROMPT), 
+            SystemMessage(content=system_prompt), 
             *history,                               
             HumanMessage(content=user_message),
-            HumanMessage(content=f"Emotion: {emotion}")
         ]
     
         logger.debug(f"Invoking LangGraph | chat_id: {chat_id} | context_messages: {len(messages)}")
@@ -76,6 +94,45 @@ def run_agent(user_id: str,chat_id: str,user_message: str,model_preference: str 
             "model_preference": model_preference,
         })
         response = result.get("response") or {}
+        cleaned_response = (response.get("content", "")).replace("\n", "")
+
+        # ── Output Safety Gate (with retry) ────────────────────────
+        for attempt in range(1, SAFETY_MAX_OUTPUT_RETRIES + 1):
+            validation = run_output_safety(cleaned_response, crisis_flag, grey_area_flag)
+            if validation["safe"]:
+                break
+
+            logger.warning(
+                f"Response blocked (attempt {attempt}/{SAFETY_MAX_OUTPUT_RETRIES}) "
+                f"| reason: {validation['reason']} | chat_id: {chat_id}"
+            )
+
+            if attempt < SAFETY_MAX_OUTPUT_RETRIES:
+                # Retry with an explanation of what was blocked
+                retry_instruction = SystemMessage(content=(
+                    f"Your previous response was blocked by the safety system.\n"
+                    f"Reason: {validation['reason']}\n"
+                    f"Please regenerate a response that avoids the blocked pattern. "
+                    f"Stay empathetic and present with the user."
+                ))
+                messages_with_retry = messages + [retry_instruction]
+                result = GRAPH.invoke({
+                    "messages": messages_with_retry,
+                    "user_id": user_id,
+                    "chat_id": chat_id,
+                    "model_preference": model_preference,
+                })
+                response = result.get("response") or {}
+                cleaned_response = (response.get("content", "")).replace("\n", "")
+            else:
+                # All retries exhausted — use safe fallback
+                logger.error(f"Output safety exhausted retries | chat_id: {chat_id}")
+                cleaned_response = (
+                    "I'm here with you. Could you tell me a little more "
+                    "about what's on your mind?"
+                )
+
+        # ── Persist Messages ───────────────────────────────────────
         logger.debug(f"Persisting user and assistant messages | chat_id: {chat_id}")
         
         save_message(
@@ -83,10 +140,9 @@ def run_agent(user_id: str,chat_id: str,user_message: str,model_preference: str 
             role="user",
             content=user_message,
             emotional_state=emotion,
-            safety_flag=False,
+            safety_flag=safety_tier,
         )
 
-        cleaned_response = (response.get("content", "")).replace("\n", "")
         save_message(chat_id, role="assistant", content=cleaned_response)
         
         update_chat_modify_date(chat_id)

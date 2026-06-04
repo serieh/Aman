@@ -1,7 +1,5 @@
-# knowledge/embeddings.py
-"""BGE-M3 embeddings + Qdrant ingestion"""
 from __future__ import annotations
-import os
+import os, sys
 from typing import Any
 from dotenv import load_dotenv
 from langchain_core.documents import Document
@@ -9,11 +7,8 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
-
-import sys
 from pathlib import Path
 
-# Add the 'backend' directory to sys.path so 'agent' can be imported
 backend_dir = Path(__file__).resolve().parent.parent.parent.parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))

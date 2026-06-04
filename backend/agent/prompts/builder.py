@@ -20,7 +20,8 @@ Runtime Injection Order
 def build_system_prompt(
     language="auto",
     emotion=None,
-    safety_flag=None
+    safety_flag=None,
+    grey_area_categories: str = "",
 ):
     log_meta = f"System prompt constructed | language: {language}"
     if emotion:
@@ -41,7 +42,8 @@ def build_system_prompt(
             build_dynamic_context(
                 language=language,
                 emotion=emotion,
-                safety_flag=safety_flag
+                safety_flag=safety_flag,
+                grey_area_categories=grey_area_categories,
             )
         ])
     except Exception as e:

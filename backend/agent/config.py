@@ -1,3 +1,21 @@
+import os
+
+# ── Qdrant Connection (shared with RAG + safety) ─────────────────────
+QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
+QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
+
+# ── Crisis Keywords (bilingual) ──────────────────────────────────────
+CRISIS_KEYWORDS = [
+    "اقتل نفسي", "انتحار", "انتحر", "نفسي انتحر", "بدي انتحر", "بده انتحر",
+    "بدي أموت", "بدي اموت", "نفسي اموت", "نفسي أموت",
+    "أذي نفسي", "اذي نفسي", "اقتل حالي", "أقتل حالي", "رايح اقتل", "راح اقتل",
+    "kill myself", "suicide", "self-harm", "end my life", "want to die",
+    "hurt myself", "hurt someone", "kill someone",
+]
+
+# ── Safety System ────────────────────────────────────────────────────
+SAFETY_MAX_OUTPUT_RETRIES = 3  # Max retries when response fails validation
+
 # ── LLM Models ───────────────────────────────────────────────────────
 # LLM_THINKING_MODEL = "gemma4:31b"    # Higher quality, slower
 LLM_THINKING_MODEL = "gemma4:26b"    # Higher quality, slower

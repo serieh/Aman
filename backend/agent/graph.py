@@ -17,6 +17,7 @@ class AgentState(TypedDict):
     emotion_context: dict | None   
     response: dict | None
     model_preference: str
+    safety_context: dict | None
 
 FALLBACK_RESPONSE = {
     "content": "I'm here with you. Could you tell me a little more about what's on your mind?",
