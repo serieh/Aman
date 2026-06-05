@@ -2,10 +2,10 @@ import operator
 from typing import TypedDict, Annotated, Sequence
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
+from langchain_core.runnables import RunnableConfig
 from .llm import structured_llm_thinking, structured_llm_fast, tools
 from logger import get_logger
-from .config import LLM_MAX_RETRIES
-
+from .config import LLM_MAX_RETRIES, FALLBACK_RESPONSE
 
 logger = get_logger(__name__)
 logger.info("Creator agent module loaded")
@@ -18,13 +18,9 @@ class AgentState(TypedDict):
     response: dict | None
     model_preference: str
     safety_context: dict | None
+    
 
-FALLBACK_RESPONSE = {
-    "content": "I'm here with you. Could you tell me a little more about what's on your mind?",
-    "emotional_state": {"emotion": "unknown", "confidence": 0.0},
-}
-
-def agent_node(state: AgentState):
+def agent_node(state: AgentState, config: RunnableConfig):
     chat_id = state.get("chat_id", "unknown")
     model_preference = state.get("model_preference", "2")
     logger.info(f"Agent node processing | chat_id: {chat_id} | model_tier: {model_preference}")
@@ -33,7 +29,8 @@ def agent_node(state: AgentState):
 
     for attempt in range(1, LLM_MAX_RETRIES + 1):
         try:
-            response = llm.invoke(state["messages"])
+            # Pass config so astream_events can intercept the chat model stream
+            response = llm.invoke(state["messages"], config=config)
             
             # If it's a tool call, update messages state and continue graph execution
             if getattr(response, "tool_calls", None):
@@ -41,7 +38,7 @@ def agent_node(state: AgentState):
                 return {"messages": [response]}
             
             # Otherwise, it's final ResponseFormat object
-            resp_dict = response.model_dump()
+            resp_dict = response.model_dump() if hasattr(response, "model_dump") else {"content": response.content}
             emotion = resp_dict.get("emotional_state", {}).get("emotion", "unknown")
             logger.info(f"LLM final response generated | chat_id: {chat_id} | detected_emotion: {emotion} | attempt: {attempt}")
             return {"response": resp_dict}

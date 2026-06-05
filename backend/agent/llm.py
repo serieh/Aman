@@ -1,13 +1,17 @@
-import json, re
+import json, re, os
+from dotenv import load_dotenv
 from langchain_ollama import ChatOllama
 from langchain_core.messages import SystemMessage, HumanMessage
 from pydantic import BaseModel
 from langchain.tools import tool
-from .tools.rag.RAG import run_rag
+from langchain_groq import ChatGroq
+
+load_dotenv()
 
 from .config import LLM_THINKING_MODEL, LLM_FAST_MODEL, LLM_CONTEXT_WINDOW, LLM_REPEAT_PENALTY, LLM_MAX_RETRIES
 from .prompts.summary import SUMMARY_PROMPT
 from .prompts.title import TITLE_PROMPT
+from .tools.rag.RAG import run_rag
 from logger import get_logger
 
 logger = get_logger(__name__)
@@ -36,13 +40,15 @@ class ResponseFormat(BaseModel):
     content: str
 
 class LLMWrapper:
-    """Wrapper to handle tool calls or extract JSON/text response."""
     def __init__(self, llm):
         self.llm = llm
 
-    def invoke(self, messages):
-        response = self.llm.invoke(messages)
-        
+    def invoke(self, messages, config=None):
+        if config:
+            response = self.llm.invoke(messages, config=config)
+        else:
+            response = self.llm.invoke(messages)
+            
         # If the LLM invoked a tool, return the AIMessage directly
         if getattr(response, "tool_calls", None):
             return response
@@ -75,13 +81,25 @@ class LLMWrapper:
 
 logger.info("Building LLMs")
 
-llm_thinking = ChatOllama(
+local_llm = ChatOllama(
     model=LLM_THINKING_MODEL,
     num_ctx=LLM_CONTEXT_WINDOW,
     keep_alive=-1,
     repeat_penalty=LLM_REPEAT_PENALTY,
 )
-structured_llm_thinking = LLMWrapper(llm_thinking.bind_tools(tools))
+
+groq_llm = ChatGroq(
+    model_name="llama-3.3-70b-versatile",
+    max_retries=2,
+    api_key=os.getenv("GROQ_API_KEY", "missing_key")
+)
+
+# Bind tools to both models, then create the fallback runnable
+groq_with_tools = groq_llm.bind_tools(tools)
+local_with_tools = local_llm.bind_tools(tools)
+
+llm_thinking_with_tools = groq_with_tools.with_fallbacks([local_with_tools])
+structured_llm_thinking = LLMWrapper(llm_thinking_with_tools)
 
 llm_fast = ChatOllama(
     model=LLM_FAST_MODEL,
@@ -91,6 +109,7 @@ llm_fast = ChatOllama(
     think=False,
 )
 structured_llm_fast = LLMWrapper(llm_fast.bind_tools(tools))
+
 
 def llm_summarize(user_message: str):
     logger.info("LLM summarization requested")
@@ -111,6 +130,7 @@ def llm_summarize(user_message: str):
             if attempt == LLM_MAX_RETRIES:
                 logger.error("LLM summarization exhausted retries, using fallback")
                 return {"content": user_message, "emotional_state": None, "safety_flag": None}
+
 
 def title_generator(user_message: str):
     logger.info("LLM title generation requested")

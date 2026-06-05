@@ -236,7 +236,7 @@ sequenceDiagram
     participant DB as PostgreSQL DB
     participant Qdrant as Qdrant Vector DB
 
-    Client->>Django: POST /message/ (Prompt text or Audio)
+    Client->>Django: WebSocket /ws/chat/<uuid>/ (JSON payload with prompt text)
     Note over Client,Django: STT translates Voice Input to Text if audio sent
     
     rect rgb(240, 248, 255)
@@ -276,20 +276,21 @@ sequenceDiagram
     end
     
     LLM-->>Graph: Return Structured JSON / Parsed Plain Text (ResponseFormat)
-    Graph-->>Django: Return Content
+    Graph-->>Django: Stream text chunks via WebSocket
 
     rect rgb(255, 240, 240)
         Note over Django,Safety: Stage 2: Output Safety Check
-        Django->>Safety: Run Output Validation (validate_response)
+        Django->>Safety: Run Output Validation (validate_response) on full text
         opt Content fails safety policy
-            Safety->>LLM: Run repair_response() or fallback to hardcoded reply
+            Safety->>Client: Send {"type": "clear"} signal to wipe UI
+            Safety->>LLM: Auto-retry generation up to 3 times
         end
-        Safety-->>Django: Return Validated Safe Content
     end
 
     Django->>DB: Save User & Assistant messages (save_message)
     Note over DB: Map safety_flag (RED for Crisis, ORANGE for Grey Area)
-    Django->>Client: Send JSON Response (Text + TTS Audio URL/Data)
+    Django->>Memory: Background Task: Extract & Save Long-Term Facts (Qdrant)
+    Django->>Client: Send JSON Response completion signal
 ```
 
 ---
@@ -323,7 +324,7 @@ All page views and REST endpoints are consolidated under Django apps, routing re
 | **Chat API** | `POST` | `/api/v1/chats/` | `ChatListView` | Instantiates a new empty conversation session |
 | **Chat API** | `GET` | `/api/v1/chats/<uuid:chat_id>/` | `ChatDetailView` | Retrieves active chats history |
 | **Chat API** | `DELETE` | `/api/v1/chats/<uuid:chat_id>/` | `ChatDetailView` | Deletes a conversation session |
-| **Agent API** | `POST` | `/api/v1/chats/<uuid:chat_id>/message/` | `MessageView` | User prompt/audio entry; streams real-time text & TTS audio |
+| **Agent WSS**| `WS` | `/ws/chat/<uuid:chat_id>/` | `ChatConsumer` | User prompt entry; streams real-time text safely |
 
 ---
 

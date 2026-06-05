@@ -1,9 +1,3 @@
-import os
-
-# ── Qdrant Connection (shared with RAG + safety) ─────────────────────
-QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
-QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
-
 # ── Crisis Keywords (bilingual) ──────────────────────────────────────
 CRISIS_KEYWORDS = [
     "اقتل نفسي", "انتحار", "انتحر", "نفسي انتحر", "بدي انتحر", "بده انتحر",
@@ -15,9 +9,12 @@ CRISIS_KEYWORDS = [
 
 # ── Safety System ────────────────────────────────────────────────────
 SAFETY_MAX_OUTPUT_RETRIES = 3  # Max retries when response fails validation
+FALLBACK_RESPONSE = {
+    "content": "I'm here with you. Could you tell me a little more about what's on your mind?",
+    "emotional_state": {"emotion": "unknown", "confidence": 0.0},
+}
 
 # ── LLM Models ───────────────────────────────────────────────────────
-# LLM_THINKING_MODEL = "gemma4:31b"    # Higher quality, slower
 LLM_THINKING_MODEL = "gemma4:26b"    # Higher quality, slower
 LLM_FAST_MODEL = "gemma4:e2b"        # Lower quality, faster
 LLM_CONTEXT_WINDOW = 4096   # 8192
@@ -26,6 +23,7 @@ LLM_MAX_RETRIES = 3
 
 # ── Memory ───────────────────────────────────────────────────────────
 MAX_MESSAGES_BEFORE_SUMMARY = 40
+QDRANT_USER_COLLECTION = "user_memory"
 
 # ── Emotion Estimator ────────────────────────────────────────────────
 EMOTION_MODEL = "AnasAlokla/multilingual_go_emotions"

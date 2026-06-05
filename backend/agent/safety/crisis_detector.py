@@ -4,8 +4,11 @@ from qdrant_client.models import Distance, VectorParams
 from sentence_transformers import SentenceTransformer
 import torch
 
-from agent.config import QDRANT_HOST, QDRANT_PORT
+import os
 from .crisis_keywords import fast_crisis_check, keyword_crisis_hit, pattern_crisis_hit
+
+QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
+QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
 
 CRISIS_COLLECTION   = "crisis_knowledge"
 CRISIS_THRESHOLD    = 0.75

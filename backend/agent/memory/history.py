@@ -15,6 +15,7 @@ def load_history(chat_id: str) -> list:
 
     rows = list(
         Message.objects.filter(chat_id=chat_id, is_active=True)
+        .exclude(safety_flag="UNSAFE_OUTPUT")
         .order_by("creation_date")
     )
 

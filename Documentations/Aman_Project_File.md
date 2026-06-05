@@ -96,9 +96,17 @@ Aman determines the user's emotional state from **two independent sources**:
                          │
               ┌──────────▼──────────┐
               │   Django Backend    │
-              │   (ASGI / DRF API)  │
-              │  <Streaming Output> │
+              │   (ASGI / Daphne)   │
+              │  <WebSocket Stream> │
               │  Auth / JWT Tokens  │  [IMPLEMENTED]
+              └──────────┬──────────┘
+                         │
+              ┌──────────▼──────────┐
+              │   Chat Consumer     │
+              │ (chats/consumers.py)│
+              │                     │
+              │  receive(json)      │  → Parse WebSocket payload
+              │  run_agent_async()  │  → Delegate to agent runner
               └──────────┬──────────┘
                          │
               ┌──────────▼──────────┐
@@ -110,7 +118,7 @@ Aman determines the user's emotional state from **two independent sources**:
               │  estimate_emotion() │  → agent/emotion_estimator.py
               │  build_prompt()     │  → agent/prompts/builder.py
               │  GRAPH.invoke()     │  → agent/graph.py
-              │  validate_resp()    │  → agent/safety/
+              │  stream_validate()  │  → agent/safety/
               │  save_message()     │  → DB write (Django ORM)
               └──────────┬──────────┘
                          │
@@ -205,6 +213,16 @@ Triggered as an asynchronous background thread when message thresholds are met.
 4. Invoke `llm_summarize()` using the fast LLM (`gemma4:e2b`) with `SUMMARY_PROMPT`.
 5. Insert a new record in the `summaries` table, incrementing the version: `version = Max("version") + 1`.
 6. Set `is_active = FALSE` on the summarized messages.
+
+### 7.3 Long-Term Memory (User Facts) `[IMPLEMENTED]`
+
+Triggered as an asynchronous background thread when a chat exchange completes.
+
+**Process (in `backend/agent/memory/long_term_memory.py`):**
+1. Extract biographical and persistent facts from the latest user message and AI response using the fast LLM (`LLM_FAST_MODEL`).
+2. If facts are detected, embed them using the standard embedding model.
+3. Save the embedded facts to a dedicated Qdrant collection (`user_memory`) tagged with the `user_id`.
+4. When `load_history()` runs, relevant user facts are queried from Qdrant and injected into the dynamic context layer.
 
 ---
 
@@ -382,7 +400,11 @@ After `GRAPH.invoke()`, `validate_response(response.content)` scans the reply te
 | Hotlines / emergency numbers | 911, 988, "call the hotline" |
 | Routing scripts (non-crisis) | "your life has value", "find someone nearby" |
 
-**Repair flow:** Validation fails → `repair_response()` regenerates with a policy correction note → re-validated → if still unsafe → minimal hardcoded fallback: `"I'm here with you. Tell me more."` The repair LLM uses `LLM_FAST_MODEL` with `.with_structured_output(ResponseFormat)`.
+**Streaming Validation & Repair flow:** The agent streams its response via WebSockets in real-time. After the stream completes, `validate_response()` scans the accumulated reply text. 
+- If validation fails, a `{"type": "clear"}` signal is dispatched over the WebSocket to erase the unsafe message from the user's UI.
+- The system automatically triggers a repair loop, appending the flagged output and asking the LLM to correct itself, up to `SAFETY_MAX_OUTPUT_RETRIES` (3 times).
+- If all retries fail, a hardcoded fallback (`FALLBACK_RESPONSE`) is sent instead.
+- Unsafe outputs are flagged in the database (`safety_flag="UNSAFE_OUTPUT"`) and excluded from future context loops to protect the agent's memory from its own mistakes.
 
 ### 10.5 Safety Flag → DB Mapping
 
@@ -548,7 +570,7 @@ All routes mapped in Django apps are detailed in `URL_API_Mapping.md`. Note that
 - **GET/PUT/DELETE** `/api/v1/users/me/` — Profile management
 - **GET/POST** `/api/v1/chats/` — Chat list and instantiation
 - **GET/DELETE** `/api/v1/chats/<uuid:chat_id>/` — Retrieve conversation history or delete
-- **POST** `/api/v1/chats/<uuid:chat_id>/message/` — Send message and obtain real-time streamed agent response
+- **WebSocket** `/ws/chat/<uuid:chat_id>/` — Send real-time messages and receive streaming agent chunks via ASGI/Daphne.
 
 ---
 
@@ -557,9 +579,10 @@ All routes mapped in Django apps are detailed in `URL_API_Mapping.md`. Note that
 - **Frontend Application**: React SPA (Vite + Tailwind CSS v4)
 - **Frontend State Management**: Zustand
 - **Backend Web Framework**: Django + Django REST Framework (DRF)
+- **WebSocket Server**: Daphne / Django Channels
 - **Authentication**: JWT (JSON Web Tokens) via `djangorestframework-simplejwt`
 - **Agent Orchestrator**: LangGraph + LangChain Core
-- **LLM Engine**: Ollama (running locally) or use cloud (like: Deepseek-V4)
+- **LLM Engine**: Ollama (running locally), Groq API, or cloud APIs (Deepseek-V4)
 - **Vector Database**: Qdrant (running locally via Docker on localhost:6333)
 - **RAG Embedding Model**: BAAI/bge-m3 (1024-dim, multilingual) or google embeding 2 (if fesable)
 - **Crisis Embedding Model**: all-MiniLM-L6-v2 (384-dim, lightweight) or google embeding 2 (if fesable)

@@ -85,89 +85,130 @@ export default function InputBar({ chatId }) {
       let firstTokenReceived = false;
 
       const token = localStorage.getItem('access');
-      const response = await fetch(`/api/v1/chats/${activeChatId}/message/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ content: messageToSend, model }),
-        signal: controller.signal
-      });
-
-      if (!response.ok) throw new Error('Failed to send message');
       
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${wsProtocol}//${window.location.host}/ws/chat/${activeChatId}/?token=${token}`;
+      
+      const ws = new WebSocket(wsUrl);
+      
+      // Keep track of connection
+      setAbortController({ abort: () => {
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+          ws.close();
+        }
+      }});
+
       let fullContent = '';
       let timeToFirstToken = null;
-      let buffer = '';
 
-      while (true) {
-        const { done, value } = await reader.read();
-        
-        if (value) {
-            const chunkText = decoder.decode(value, { stream: true });
-            fullContent += chunkText;
-        }
-        
-        if (done) {
-            break;
-        }
-        
-        // Track time to first response token
-        if (!firstTokenReceived && fullContent.trim().length > 0) {
-          firstTokenReceived = true;
-          timeToFirstToken = ((Date.now() - startTime) / 1000).toFixed(1);
-        }
-        
-        setMessages(useChatStore.getState().messages.map(m => 
-          m.message_id === aiMsgId ? { ...m, content: fullContent, timeToFirstToken } : m
-        ));
-      }
-      
-      // Final update
-      setMessages(useChatStore.getState().messages.map(m => 
-        m.message_id === aiMsgId ? { ...m, content: fullContent, isGenerating: false } : m
-      ));
+      ws.onopen = () => {
+        ws.send(JSON.stringify({
+          message: messageToSend,
+          model_preference: model,
+        }));
+      };
 
-      // Fetch updated chat title after response completes
-      const currentGeneratingId = useChatStore.getState().generatingTitleChatId;
-      if (currentGeneratingId === activeChatId) {
-        const pollTitle = async (retries = 6, delay = 2000) => {
-          if (retries <= 0) {
-            useChatStore.getState().setGeneratingTitleChatId(null);
-            return;
-          }
-          try {
-            const { data: chatData } = await api.get(`/chats/${activeChatId}/`);
-            if (chatData.title && chatData.title !== 'Untitled Chat') {
-              updateChatTitle(activeChatId, chatData.title);
-            } else {
-              setTimeout(() => pollTitle(retries - 1, delay), delay);
-            }
-          } catch (e) {
-            useChatStore.getState().setGeneratingTitleChatId(null);
-          }
-        };
-        pollTitle();
-      }
-      
-    } catch (err) {
-      if (err.name === 'AbortError') {
-        console.log('Stream aborted');
-      } else {
-        console.error("Stream failed", err);
-        // Show error in the AI message bubble
-        const currentMessages = useChatStore.getState().messages;
-        const lastMsg = currentMessages[currentMessages.length - 1];
-        if (lastMsg && lastMsg.role === 'assistant' && lastMsg.isGenerating) {
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        
+        if (data.error) {
+          console.error("WebSocket error:", data.error);
+          ws.close();
+          const currentMessages = useChatStore.getState().messages;
           setMessages(currentMessages.map(m =>
-            m.message_id === lastMsg.message_id ? { ...m, content: 'Sorry, something went wrong. Please try again.', isGenerating: false } : m
+            m.message_id === aiMsgId ? { ...m, content: `Sorry, something went wrong: ${data.error}`, isGenerating: false } : m
+          ));
+          setIsGenerating(false);
+          setAbortController(null);
+          return;
+        }
+        
+        if (data.clear) {
+          fullContent = '';
+          firstTokenReceived = false;
+          timeToFirstToken = null;
+          setMessages(useChatStore.getState().messages.map(m => 
+            m.message_id === aiMsgId ? { ...m, content: '', timeToFirstToken: null } : m
+          ));
+          return;
+        }
+
+        if (data.replace_all) {
+          fullContent = data.replace_all;
+          setMessages(useChatStore.getState().messages.map(m => 
+            m.message_id === aiMsgId ? { ...m, content: fullContent } : m
+          ));
+          return;
+        }
+        
+        if (data.chunk) {
+          fullContent += data.chunk;
+          if (!firstTokenReceived && fullContent.trim().length > 0) {
+            firstTokenReceived = true;
+            timeToFirstToken = ((Date.now() - startTime) / 1000).toFixed(1);
+          }
+          setMessages(useChatStore.getState().messages.map(m => 
+            m.message_id === aiMsgId ? { ...m, content: fullContent, timeToFirstToken } : m
           ));
         }
-      }
-    } finally {
+        
+        if (data.done) {
+          ws.close();
+          // Final update
+          setMessages(useChatStore.getState().messages.map(m => 
+            m.message_id === aiMsgId ? { ...m, content: fullContent, isGenerating: false } : m
+          ));
+
+          // Fetch updated chat title after response completes
+          const currentGeneratingId = useChatStore.getState().generatingTitleChatId;
+          if (currentGeneratingId === activeChatId) {
+            const pollTitle = async (retries = 6, delay = 2000) => {
+              if (retries <= 0) {
+                useChatStore.getState().setGeneratingTitleChatId(null);
+                return;
+              }
+              try {
+                const { data: chatData } = await api.get(`/chats/${activeChatId}/`);
+                if (chatData.title && chatData.title !== 'Untitled Chat') {
+                  updateChatTitle(activeChatId, chatData.title);
+                } else {
+                  setTimeout(() => pollTitle(retries - 1, delay), delay);
+                }
+              } catch (e) {
+                useChatStore.getState().setGeneratingTitleChatId(null);
+              }
+            };
+            pollTitle();
+          }
+          
+          setIsGenerating(false);
+          setAbortController(null);
+        }
+      };
+
+      ws.onerror = (err) => {
+        console.error("WebSocket connection failed", err);
+        const currentMessages = useChatStore.getState().messages;
+        setMessages(currentMessages.map(m =>
+          m.message_id === aiMsgId ? { ...m, content: 'Sorry, connection failed. Please try again.', isGenerating: false } : m
+        ));
+        setIsGenerating(false);
+        setAbortController(null);
+      };
+
+      ws.onclose = () => {
+        // Fallback in case it closes without done signal or error handled
+        if (useChatStore.getState().messages.find(m => m.message_id === aiMsgId)?.isGenerating) {
+            setMessages(useChatStore.getState().messages.map(m => 
+                m.message_id === aiMsgId ? { ...m, isGenerating: false } : m
+            ));
+            setIsGenerating(false);
+            setAbortController(null);
+        }
+      };
+
+    } catch (err) {
+      console.error("Stream initialization failed", err);
       setIsGenerating(false);
       setAbortController(null);
     }
