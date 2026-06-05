@@ -26,10 +26,20 @@ The physical structure of the workspace is organized into three major zones:
 ├── Documentations/                     # Technical specifications, schema, and API guides
 │   ├── Aman_DB_Tables.md               # Precise database schema & cascade mapping
 │   ├── Aman_Project_File.md            # Comprehensive system specification (v6)
-│   ├── Aman_Project_Structure_v1.md    # Legacy project structure documentation
-│   ├── Aman_Project_Structure_v2.md    # [THIS FILE] Updated structure & layout documentation
+│   ├── Aman_Project_Structure.md       # [THIS FILE] Updated structure & layout documentation
 │   ├── Aman_URL_API_Mapping.md         # Precise URL/API route mappings & JSON schemas
+│   ├── UI_design.md                    # UI/UX design specifications
 │   └── RAG Knowledge Base for Aman.txt # RAG knowledge base details and research notes
+├── frontend/                           # React SPA Application (Vite + Tailwind CSS v4)
+│   ├── index.html                      # Main HTML entry point
+│   ├── package.json                    # Node dependencies and scripts
+│   ├── src/                            # React source code
+│   │   ├── api/                        # Axios instances and API clients
+│   │   ├── components/                 # Reusable UI components (Sidebar, InputBar, MessageBubble)
+│   │   ├── layouts/                    # Global app layouts (AppLayout)
+│   │   ├── pages/                      # Main route pages (AuthPage, Dashboard, ChatRoom)
+│   │   ├── store/                      # Zustand global state (useAuthStore, useChatStore)
+│   │   └── index.css                   # Global Tailwind CSS and animations
 └── backend/                            # Root Backend Project Directory
     ├── manage.py                       # Django command-line execution entry point
     ├── logger.py                       # Centralized runtime logging utility
@@ -108,9 +118,16 @@ The physical structure of the workspace is organized into three major zones:
 ## 2. Deep-Dive Directory Audit (Web Framework Layer)
 
 ### 2.1 Roots & Project Configs (Root Directory)
-*   `pyproject.toml` & `uv.lock`: Configuration files for package management with `uv` for reproducible environments. Key dependencies include `django`, `djangorestframework`, `djangorestframework-simplejwt`, `langchain-ollama`, `langgraph`, `qdrant-client`, `sentence-transformers`, and `pydantic`.
+*   `pyproject.toml` & `uv.lock`: Configuration files for package management with `uv` for reproducible Python backend environments.
+*   `frontend/package.json`: Node dependencies for the React frontend, including Vite, Tailwind CSS v4, Zustand, Axios, and React Router.
 *   `Documentations/`: Houses core technical specification files, URL mapping matrixes, database DDLs, and references.
 *   `backend/.env`: Configures environment-specific variables including Django keys, PostgreSQL credentials, local Ollama URLs, and Qdrant instances.
+
+### 2.1a Frontend SPA (`frontend/`)
+The frontend is built as a single-page application using React.
+*   `src/store/`: Uses Zustand for lightweight, boilerplate-free global state management (`useAuthStore` for tokens/user data, `useChatStore` for real-time chat history and titles).
+*   `src/pages/`: Main application views. `AuthPage.jsx` handles Login/Registration. `Dashboard.jsx` handles the chat list and empty states. `ChatRoom.jsx` renders active conversations.
+*   `src/components/`: Reusable interface components. `InputBar.jsx` handles text streaming and model selection. `MessageBubble.jsx` renders AI reasoning blocks. `Sidebar.jsx` handles navigation.
 
 ### 2.2 Django System Core (`backend/core/`)
 This is the root configuration directory of the Django project.

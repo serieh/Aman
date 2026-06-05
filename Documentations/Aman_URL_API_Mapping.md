@@ -31,10 +31,10 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    # Includes app routing tables directly
-    path("",  include("api.urls")),     # Renders login/register templates & auth REST APIs
-    path("",  include("users.urls")),   # Renders profile template & user profile REST APIs
-    path("",  include("chats.urls")),   # Renders dashboard/chat room templates & chats REST APIs
+    # Includes app routing tables directly (REST APIs only)
+    path("",  include("api.urls")),     # Auth REST APIs
+    path("",  include("users.urls")),   # User profile REST APIs
+    path("",  include("chats.urls")),   # Chats REST APIs
 ]
 ```
 
@@ -101,24 +101,20 @@ All REST endpoints operate on JSON requests/responses and are standardized under
 
 | Category | HTTP Method | URL Path | View Class | Purpose / Response |
 | :--- | :---: | :--- | :--- | :--- |
-| **Auth Pages** | `GET` | `/login/` | `LoginPageView` | Renders combined `login.html` form template |
 | **Auth REST API** | `POST` | `/api/v1/auth/register/` | `RegisterView` | Signs up new user; returns JWT `access` & `refresh` |
 | **Auth REST API** | `POST` | `/api/v1/auth/login/` | `LoginView` | Authenticates credentials; returns JWT tokens |
 | **Auth REST API** | `POST` | `/api/v1/auth/refresh/` | `TokenRefreshView` | DRF SimpleJWT token refresh endpoint |
-| **Auth REST API** | `POST` | `/api/v1/auth/logout/` | `LogoutView` | Blacklists refresh token; redirects to `/login/` |
-| **Profile Page** | `GET` | `/settings/` | `SettingsPageView` | Renders `settings.html` panel template |
+| **Auth REST API** | `POST` | `/api/v1/auth/logout/` | `LogoutView` | Blacklists refresh token |
 | **Profile API** | `GET` | `/api/v1/users/me/` | `UserMeView` | Retrieves current logged-in user profile details |
 | **Profile API** | `PUT` | `/api/v1/users/me/` | `UserMeView` | Partially updates user profile details |
 | **Profile API** | `DELETE` | `/api/v1/users/me/` | `UserMeView` | Completely deletes user account (cascades all data) |
-| **Chat Pages** | `GET` | `/` | `DashboardPageView` | Renders `dashboard.html` template (main entrypoint) |
-| **Chat Pages** | `GET` | `/dashboard/` | `DashboardPageView` | Renders `dashboard.html` template |
-| **Chat Pages** | `GET` | `/chat/` | `DashboardPageView` | Renders `dashboard.html` template |
-| **Chat Pages** | `GET` | `/chat/<uuid:chat_id>/` | `ChatRoomPageView` | Renders `chat.html` template (active chat room) |
 | **Chat REST API** | `GET` | `/api/v1/chats/` | `ChatListView` | Lists active user chats (ordered by most recent modification) |
 | **Chat REST API** | `POST` | `/api/v1/chats/` | `ChatListView` | Creates a new empty chat session |
 | **Chat REST API** | `GET` | `/api/v1/chats/<uuid:chat_id>/` | `ChatDetailView` | Fetches chat title and all active messages |
 | **Chat REST API** | `DELETE` | `/api/v1/chats/<uuid:chat_id>/` | `ChatDetailView` | Deletes specified chat session and all messages/summaries |
 | **Agent REST API** | `POST` | `/api/v1/chats/<uuid:chat_id>/message/` | `MessageView` | Sends message to AI agent; streams real-time LLM response chunks |
+
+*Note: Page rendering routes (like `/login/` or `/dashboard/`) are now handled exclusively by the React SPA (Vite/React Router) running on port 5173, communicating directly with the `/api/v1/` endpoints.*
 
 ---
 

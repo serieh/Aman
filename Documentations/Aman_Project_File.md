@@ -539,7 +539,7 @@ class Summary(models.Model):
 
 ## 13. Complete Endpoint Routing Matrix
 
-All routes mapped in Django apps are detailed in `URL_API_Mapping.md`.
+All routes mapped in Django apps are detailed in `URL_API_Mapping.md`. Note that the web interface is now a separate React SPA (Vite/Tailwind) that consumes these REST endpoints directly, completely bypassing Django's traditional HTML templates.
 
 - **POST** `/api/v1/auth/register/` — Registration
 - **POST** `/api/v1/auth/login/` — Login
@@ -554,6 +554,8 @@ All routes mapped in Django apps are detailed in `URL_API_Mapping.md`.
 
 ## 14. Tech Stack Summary
 
+- **Frontend Application**: React SPA (Vite + Tailwind CSS v4)
+- **Frontend State Management**: Zustand
 - **Backend Web Framework**: Django + Django REST Framework (DRF)
 - **Authentication**: JWT (JSON Web Tokens) via `djangorestframework-simplejwt`
 - **Agent Orchestrator**: LangGraph + LangChain Core
