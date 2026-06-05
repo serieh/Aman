@@ -589,3 +589,17 @@ All routes mapped in Django apps are detailed in `URL_API_Mapping.md`. Note that
 - **Relational Database**: PostgreSQL (accessed via Django ORM, running via Docker)
 - **Logger**: Python standard `logging` (custom configured in `backend/logger.py`)
 - **Package Manager**: UV
+
+---
+
+## 15. Recent Updates (Changelog)
+
+### v6.1 - UI Expansion & Groq Integration
+- **Frontend Restructuring**: Split the single-page app into a public Landing Page (`/`) and a protected Chat Dashboard (`/app`).
+- **Settings & Preferences**: Added a user settings modal supporting dynamic UI language switching, dark mode (with persistent memory), and user profile updates.
+- **Agent Reasoning**: Switched the core "thinking" model to `openai/gpt-oss-120b` via the Groq API. Created a custom `LLMWrapper` in `agent/llm.py` to seamlessly stream and capture `<think>` tags within LangChain.
+- **Chat Management**: Users can now directly rename (`PATCH`) and delete (`DELETE`) individual conversations from the sidebar UI.
+- **Data Privacy**: Added a "Delete History" endpoint (`/api/v1/chats/history/`) that wipes all user chats from PostgreSQL and purges their long-term extracted facts from the Qdrant vector database.
+- **Authentication Enhancements**: Added an endpoint to change user passwords (`/api/v1/users/change-password/`) with validation rules.
+- **Admin Panel**: Registered the `Chat` and `Message` models in the Django admin panel.
+- **Safety Fixes**: Resolved a critical database crash where the `UNSAFE_OUTPUT` safety flag exceeded the 10-character limit by renaming it to `UNSAFE`.

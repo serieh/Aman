@@ -56,7 +56,7 @@ export default function InputBar({ chatId }) {
     // OPTIMISTIC UI: Instantly navigate and show user message
     if (!activeChatId || activeChatId === 'temp') {
       activeChatId = 'temp';
-      navigate(`/chat/temp`);
+      navigate(`/app/chat/temp`);
     }
 
     const userMsg = { role: 'user', content: messageToSend, message_id: Date.now().toString() };
@@ -74,7 +74,7 @@ export default function InputBar({ chatId }) {
         setChats([data, ...chats]);
         setCurrentChat(data);
         setGeneratingTitleChatId(activeChatId);
-        navigate(`/chat/${activeChatId}`, { replace: true });
+        navigate(`/app/chat/${activeChatId}`, { replace: true });
       }
 
       // Create a temporary AI message for streaming
@@ -295,10 +295,6 @@ export default function InputBar({ chatId }) {
           )}
         </div>
 
-        {/* Attach button (right) */}
-        <button type="button" className="p-1.5 text-slate-400 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-100 dark:hover:bg-slate-800" disabled title="Attach file (Coming soon)">
-          <Paperclip size={15} />
-        </button>
       </div>
     </div>
   );

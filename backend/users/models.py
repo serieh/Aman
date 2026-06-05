@@ -9,7 +9,17 @@ class UserManager(BaseUserManager):
         user.save()
         return user
 
-class User(AbstractBaseUser):
+    def create_superuser(self, email, name, password, **extra):
+        extra.setdefault("is_staff", True)
+        extra.setdefault("is_superuser", True)
+        extra.setdefault("is_active", True)
+        # Handle birthdate/gender/country if not provided
+        extra.setdefault("birthdate", "2000-01-01")
+        extra.setdefault("gender", "male")
+        extra.setdefault("country", "US")
+        return self.create_user(email, name, password, **extra)
+
+class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=150)
     email = models.EmailField(unique=True)
@@ -17,6 +27,14 @@ class User(AbstractBaseUser):
     gender = models.CharField(max_length=10, choices=[("male", "male"), ("female", "female")])
     country = models.CharField(max_length=2)
     creation_date = models.DateTimeField(auto_now_add=True)
+
+    # Preferences
+    theme = models.CharField(max_length=10, default="light")
+    language = models.CharField(max_length=10, default="en")
+
+    # Django Admin / Permissions
+    is_staff = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["name"]

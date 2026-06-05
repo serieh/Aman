@@ -38,11 +38,11 @@ export default function AuthPage() {
       if (isLogin) {
         const { data } = await api.post('/auth/login/', { email: formData.email, password: formData.password });
         login(data.access, data.refresh, null);
-        navigate('/');
+        navigate('/app');
       } else {
         const { data } = await api.post('/auth/register/', formData);
         login(data.access, data.refresh, null);
-        navigate('/');
+        navigate('/app');
       }
     } catch (err) {
       const data = err.response?.data;

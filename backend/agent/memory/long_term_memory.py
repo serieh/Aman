@@ -1,6 +1,6 @@
 import uuid, asyncio, os
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams
+from qdrant_client.models import Distance, VectorParams, FilterSelector, Filter, FieldCondition, MatchValue
 from agent.config import QDRANT_USER_COLLECTION, EMBEDDINGS_VECTOR_SIZE
 from agent.llm import llm_fast
 from langchain_core.messages import HumanMessage
@@ -18,6 +18,28 @@ def ensure_user_collection(client, vector_size=EMBEDDINGS_VECTOR_SIZE):
             collection_name=QDRANT_USER_COLLECTION,
             vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
         )
+
+
+def clear_user_facts(user_id: str):
+    """Delete all permanent facts for a specific user from Qdrant."""
+    client = get_qdrant_client()
+    try:
+        ensure_user_collection(client)
+        client.delete(
+            collection_name=QDRANT_USER_COLLECTION,
+            points_selector=FilterSelector(
+                filter=Filter(
+                    must=[
+                        FieldCondition(
+                            key="user_id",
+                            match=MatchValue(value=user_id),
+                        ),
+                    ],
+                )
+            ),
+        )
+    except Exception as e:
+        print(f"Failed to clear memory: {e}")
 
 
 def retrieve_user_facts(user_id: str, query: str = "") -> str:

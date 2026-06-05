@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Plus, Settings, LogOut, PanelLeftClose, MessageSquare } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Plus, Settings, LogOut, PanelLeftClose, MessageSquare, Edit2, Trash2, Check, X } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useChatStore } from '../store/useChatStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -9,8 +9,11 @@ export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
   const navigate = useNavigate();
   const { chatId } = useParams();
   const logout = useAuthStore(state => state.logout);
-  const { chats, setChats, generatingTitleChatId } = useChatStore();
-  
+  const { chats, setChats, updateChatTitle, removeChat, generatingTitleChatId } = useChatStore();
+
+  const [editingChatId, setEditingChatId] = useState(null);
+  const [editTitle, setEditTitle] = useState("");
+
   useEffect(() => {
     const fetchChats = async () => {
       try {
@@ -25,7 +28,7 @@ export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
 
   const handleNewChat = () => {
     useChatStore.getState().setMessages([]);
-    navigate('/');
+    navigate('/app');
     if (window.innerWidth < 768) setIsOpen(false);
   };
 
@@ -43,6 +46,34 @@ export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
     } finally {
       logout();
       navigate('/login');
+    }
+  };
+
+  const handleSaveTitle = async (id, e) => {
+    e?.preventDefault();
+    if (!editTitle.trim()) {
+      setEditingChatId(null);
+      return;
+    }
+    try {
+      await api.patch(`/chats/${id}/`, { title: editTitle });
+      updateChatTitle(id, editTitle);
+    } catch (err) {
+      console.error("Failed to rename", err);
+    }
+    setEditingChatId(null);
+  };
+
+  const handleDeleteChat = async (id, e) => {
+    e.preventDefault();
+    try {
+      await api.delete(`/chats/${id}/`);
+      removeChat(id);
+      if (chatId === id) {
+        navigate('/app');
+      }
+    } catch (err) {
+      console.error("Failed to delete", err);
     }
   };
   
@@ -81,29 +112,72 @@ export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
             {chats.map(chat => {
               const isGeneratingTitle = generatingTitleChatId === chat.chat_id;
               const displayTitle = (!chat.title || chat.title === 'Untitled Chat') && isGeneratingTitle;
+              const isEditing = editingChatId === chat.chat_id;
+
               return (
-                <li key={chat.chat_id}>
+                <li key={chat.chat_id} className="group relative">
                   <Link 
-                    to={`/chat/${chat.chat_id}`} 
+                    to={`/app/chat/${chat.chat_id}`} 
                     onClick={() => handleChatClick(chat.chat_id)}
                     className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors ${chatId === chat.chat_id ? 'bg-aman-primary/10 text-aman-primary font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white font-medium'}`}
                   >
                     <MessageSquare size={14} className={chatId === chat.chat_id ? 'text-aman-primary flex-shrink-0' : 'text-slate-400 flex-shrink-0'} />
-                    {displayTitle ? (
-                      <div className="flex-1 flex items-center gap-1.5 overflow-hidden">
-                        <span className="text-xs bg-clip-text text-transparent bg-gradient-to-r from-aman-primary to-aman-tertiary font-bold animate-pulse tracking-wide">
+                    
+                    {isEditing ? (
+                      <div className="flex-1 flex items-center gap-1" onClick={(e) => e.preventDefault()}>
+                        <input 
+                          autoFocus
+                          value={editTitle}
+                          onChange={e => setEditTitle(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') handleSaveTitle(chat.chat_id, e); if (e.key === 'Escape') setEditingChatId(null); }}
+                          className="flex-1 bg-white dark:bg-slate-800 text-sm border border-aman-primary rounded px-1.5 py-0.5 outline-none text-slate-700 dark:text-slate-200 min-w-0"
+                        />
+                        <button onClick={(e) => handleSaveTitle(chat.chat_id, e)} className="text-aman-primary hover:text-aman-tertiary flex-shrink-0">
+                          <Check size={14} />
+                        </button>
+                        <button onClick={(e) => { e.preventDefault(); setEditingChatId(null); }} className="text-slate-400 hover:text-slate-600 flex-shrink-0">
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : displayTitle ? (
+                      <div className="flex-1 flex items-center gap-1.5 overflow-hidden pr-12">
+                        <span className="text-xs bg-clip-text text-transparent bg-gradient-to-r from-aman-primary to-aman-tertiary font-bold animate-pulse tracking-wide truncate">
                           Generating title
                         </span>
-                        <span className="flex gap-0.5 mt-0.5">
+                        <span className="flex gap-0.5 mt-0.5 flex-shrink-0">
                           <span className="w-1 h-1 bg-aman-primary rounded-full animate-bounce"></span>
                           <span className="w-1 h-1 bg-aman-tertiary rounded-full animate-bounce [animation-delay:0.15s]"></span>
                           <span className="w-1 h-1 bg-aman-primary rounded-full animate-bounce [animation-delay:0.3s]"></span>
                         </span>
                       </div>
                     ) : (
-                      <span className="truncate">{chat.title || "Untitled Chat"}</span>
+                      <span className="truncate flex-1 pr-12">{chat.title || "Untitled Chat"}</span>
                     )}
                   </Link>
+
+                  {/* Actions */}
+                  {!isEditing && (
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800/90 rounded-lg p-0.5 shadow-sm border border-slate-200 dark:border-slate-700 backdrop-blur-sm">
+                      <button 
+                        onClick={(e) => { 
+                          e.preventDefault(); 
+                          setEditTitle(chat.title || "Untitled Chat"); 
+                          setEditingChatId(chat.chat_id); 
+                        }}
+                        className="p-1.5 text-slate-500 hover:text-aman-primary transition-colors rounded hover:bg-white dark:hover:bg-slate-700"
+                        title="Rename"
+                      >
+                        <Edit2 size={13} />
+                      </button>
+                      <button 
+                        onClick={(e) => handleDeleteChat(chat.chat_id, e)}
+                        className="p-1.5 text-slate-500 hover:text-red-500 transition-colors rounded hover:bg-white dark:hover:bg-slate-700"
+                        title="Delete"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  )}
                 </li>
               );
             })}

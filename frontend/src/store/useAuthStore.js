@@ -8,6 +8,9 @@ export const useAuthStore = create((set) => ({
     localStorage.setItem('refresh', refresh);
     set({ isAuthenticated: true, user });
   },
+  updateUser: (user) => {
+    set({ user });
+  },
   logout: () => {
     localStorage.removeItem('access');
     localStorage.removeItem('refresh');

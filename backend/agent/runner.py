@@ -149,7 +149,7 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
             redacted_message = "[This message was flagged and removed for violating safety guidelines]"
             yield {"replace_all": redacted_message}
             assistant_content = redacted_message
-            assistant_flag = "UNSAFE_OUTPUT"
+            assistant_flag = "UNSAFE"
 
         await asyncio.to_thread(save_message, chat_id, role="assistant", content=assistant_content, safety_flag=assistant_flag)
         await asyncio.to_thread(update_chat_modify_date, chat_id)

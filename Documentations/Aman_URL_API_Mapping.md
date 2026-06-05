@@ -108,9 +108,12 @@ All REST endpoints operate on JSON requests/responses and are standardized under
 | **Profile API** | `GET` | `/api/v1/users/me/` | `UserMeView` | Retrieves current logged-in user profile details |
 | **Profile API** | `PUT` | `/api/v1/users/me/` | `UserMeView` | Partially updates user profile details |
 | **Profile API** | `DELETE` | `/api/v1/users/me/` | `UserMeView` | Completely deletes user account (cascades all data) |
+| **Profile API** | `POST` | `/api/v1/users/change-password/` | `ChangePasswordView` | Changes user password |
 | **Chat REST API** | `GET` | `/api/v1/chats/` | `ChatListView` | Lists active user chats (ordered by most recent modification) |
 | **Chat REST API** | `POST` | `/api/v1/chats/` | `ChatListView` | Creates a new empty chat session |
+| **Chat REST API** | `DELETE` | `/api/v1/chats/history/` | `DeleteHistoryView` | Deletes all of the user's chat history and wipes long-term memory |
 | **Chat REST API** | `GET` | `/api/v1/chats/<uuid:chat_id>/` | `ChatDetailView` | Fetches chat title and all active messages |
+| **Chat REST API** | `PATCH` | `/api/v1/chats/<uuid:chat_id>/` | `ChatDetailView` | Renames a specific chat session |
 | **Chat REST API** | `DELETE` | `/api/v1/chats/<uuid:chat_id>/` | `ChatDetailView` | Deletes specified chat session and all messages/summaries |
 | **Agent REST API** | `POST` | `/api/v1/chats/<uuid:chat_id>/message/` | `MessageView` | Sends message to AI agent; streams real-time LLM response chunks |
 

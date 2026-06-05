@@ -57,6 +57,32 @@ class ChatDetailView(APIView):
         chat.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    def patch(self, request, chat_id):
+        chat = self.get_chat(request, chat_id)
+        if not chat:
+            return Response({"error": "Chat not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        title = request.data.get("title")
+        if title is not None:
+            chat.title = title
+            chat.save()
+            return Response(ChatSerializer(chat).data)
+        return Response({"error": "No title provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+class DeleteHistoryView(APIView):
+    def delete(self, request):
+        user = request.user
+        # Delete all chats
+        Chat.objects.filter(user=user).delete()
+        # Delete from Qdrant Memory
+        try:
+            from agent.memory.long_term_memory import clear_user_facts
+            clear_user_facts(str(user.id))
+        except Exception as e:
+            logger.error(f"Failed to clear Qdrant memory for user {user.id}: {e}")
+        
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class MessageView(APIView):
     def post(self, request, chat_id):

@@ -8,7 +8,7 @@ from langchain_groq import ChatGroq
 
 load_dotenv()
 
-from .config import LLM_THINKING_MODEL, LLM_FAST_MODEL, LLM_CONTEXT_WINDOW, LLM_REPEAT_PENALTY, LLM_MAX_RETRIES
+from .config import LLM_THINKING_MODEL, LLM_FAST_MODEL, LLM_CONTEXT_WINDOW, LLM_REPEAT_PENALTY, LLM_MAX_RETRIES, GROQ_MODEL_NAME
 from .prompts.summary import SUMMARY_PROMPT
 from .prompts.title import TITLE_PROMPT
 from .tools.rag.RAG import run_rag
@@ -54,7 +54,9 @@ class LLMWrapper:
             return response
             
         raw_text = response.content
-        
+        if "reasoning_content" in response.additional_kwargs and response.additional_kwargs["reasoning_content"]:
+            raw_text = "<think>\n" + response.additional_kwargs["reasoning_content"] + "\n</think>\n" + raw_text
+            
         # Strip <think> block if present
         clean_text = re.sub(r"<think>.*?</think>", "", raw_text, flags=re.DOTALL).strip()
         if not clean_text:
@@ -75,8 +77,38 @@ class LLMWrapper:
         return ResponseFormat(content=clean_text)
 
     def stream(self, messages):
-        # Directly yield chunks for streaming, frontend handles parsing/think blocks
+        in_reasoning = False
+        reasoning_started = False
+        
+        # Try to extract actual model name from Langchain wrapper
+        model_str = "unknown"
+        if hasattr(self.llm, "runnable"): # RunnableWithFallbacks
+            base = getattr(self.llm.runnable, "bound", self.llm.runnable)
+            model_str = getattr(base, "model_name", getattr(base, "model", "unknown"))
+        else:
+            base = getattr(self.llm, "bound", self.llm)
+            model_str = getattr(base, "model_name", getattr(base, "model", "unknown"))
+
+        logger.info(f"LLM Stream starting | Target Model: {model_str}")
+        
         for chunk in self.llm.stream(messages):
+            # If the chunk has tool calls, just yield it (useful if tools are used)
+            if getattr(chunk, "tool_call_chunks", None):
+                yield chunk
+                continue
+                
+            reasoning = chunk.additional_kwargs.get("reasoning_content", "")
+            if reasoning:
+                if not reasoning_started:
+                    chunk.content = "<think>\n" + reasoning
+                    reasoning_started = True
+                    in_reasoning = True
+                else:
+                    chunk.content = reasoning
+            else:
+                if in_reasoning:
+                    chunk.content = "\n</think>\n" + (chunk.content or "")
+                    in_reasoning = False
             yield chunk
 
 logger.info("Building LLMs")
@@ -89,7 +121,7 @@ local_llm = ChatOllama(
 )
 
 groq_llm = ChatGroq(
-    model_name="llama-3.3-70b-versatile",
+    model_name=GROQ_MODEL_NAME,
     max_retries=2,
     api_key=os.getenv("GROQ_API_KEY", "missing_key")
 )

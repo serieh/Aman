@@ -306,3 +306,6 @@ Remember.txt
 extra/
 backend/test.py
 backend/test_runner.py
+backend/test_groq.py
+backend/test_embeddings.py
+backend/add_mock_chats.py

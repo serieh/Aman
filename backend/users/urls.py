@@ -7,4 +7,5 @@ urlpatterns = [
 
     # API
     path("api/v1/users/me/", views.UserMeView.as_view()),
+    path("api/v1/users/change-password/", views.ChangePasswordView.as_view()),
 ]

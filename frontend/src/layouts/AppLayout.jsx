@@ -1,14 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import InputBar from '../components/InputBar';
 import SettingsModal from '../components/SettingsModal';
 import { Menu } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
 
 export default function AppLayout() {
   const [showSettings, setShowSettings] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { chatId } = useParams();
+  const user = useAuthStore(state => state.user);
+
+  useEffect(() => {
+    if (user?.theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [user?.theme]);
 
   return (
     <div className="flex h-screen w-full bg-aman-bg-light overflow-hidden relative">
