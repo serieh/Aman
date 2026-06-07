@@ -603,3 +603,11 @@ All routes mapped in Django apps are detailed in `URL_API_Mapping.md`. Note that
 - **Authentication Enhancements**: Added an endpoint to change user passwords (`/api/v1/users/change-password/`) with validation rules.
 - **Admin Panel**: Registered the `Chat` and `Message` models in the Django admin panel.
 - **Safety Fixes**: Resolved a critical database crash where the `UNSAFE_OUTPUT` safety flag exceeded the 10-character limit by renaming it to `UNSAFE`.
+
+### Latest UI & Optimization Updates (June 2026)
+- **Model Loading:** The backend now asynchronously preloads `gemma4:e2b` (the fast fallback LLM), the `BAAI/bge-m3` embedding model, and the `multilingual_go_emotions` estimator via threads in `apps.py` on server boot, completely eliminating cold-start latency.
+- **LLM Routing:** Removed deprecated local thinking models (`gemma4:32b`/`26b`) from memory to free up VRAM. Fallback logic automatically switches from `ChatGroq` to `gemma4:e2b` after 3 retries.
+- **Frontend Aesthetics:** Added `aman_icon.ico` as the system Favicon. Replaced the generic chat bot avatar with the Aman logo. Integrated staggered Tailwind animations (`animate-in slide-in-from-bottom`) and hover scaling (`hover:scale-110`) on the landing page feature cards.
+- **Auth & State:** Fixed token caching issues by implementing an Axios 401 response interceptor in `axios.js` to automatically clear expired JWTs and redirect to `/login`. Refactored `AppLayout.jsx` and `useAuthStore.js` to hydrate `user` profile data automatically on component mount.
+- **Database Optimization:** Eliminated N+1 ORM queries by injecting `select_related('chat')` and `select_related('user')` into `history.py` and `views.py`.
+- **Memory Management:** Added a `DeleteMemoryView` to `/api/v1/chats/memory/` enabling users to selectively wipe Qdrant vector memory (`clear_user_facts`) without destroying Postgres chat histories. Bound this endpoint to the "Clear AI Memory Only" button in the settings Danger Zone.

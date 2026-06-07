@@ -3,7 +3,7 @@
 
 Aman is a bilingual (Arabic/English) AI-powered Emotional Wellness Support Agent built on **Django** (for backend REST API, user management, and template rendering) and **LangGraph / LangChain** (for conversational orchestration and agentic reasoning).
 
-This document provides a comprehensive guide to the physical and logical structure of the **Aman Reformed** codebase. It outlines the role of each directory, file, and component, showing how the Django web framework interfaces with the framework-agnostic AI agent engine, RAG ingestion components, and safety systems.
+This document provides a comprehensive guide to the physical and logical structure of the **Aman** codebase. It outlines the role of each directory, file, and component, showing how the Django web framework interfaces with the framework-agnostic AI agent engine, RAG ingestion components, and safety systems.
 
 ---
 
@@ -15,7 +15,7 @@ The physical structure of the workspace is organized into three major zones:
 3. **Django Backend Application**: The web server, REST apps, RAG knowledge ingestion pipelines, and the core AI agent engine.
 
 ```
-/home/opendude/Documents/Aman Reformed/
+/home/opendude/Documents/Aman/
 ├── .gitignore                          # Standard git ignore definitions
 ├── .python-version                     # Local python runtime version lock (e.g. 3.12)
 ├── LICENSE                             # Project licensing agreement

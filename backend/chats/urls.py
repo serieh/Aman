@@ -11,6 +11,7 @@ urlpatterns = [
     # API
     path("api/v1/chats/",                        views.ChatListView.as_view()),
     path("api/v1/chats/history/",                views.DeleteHistoryView.as_view()),
+    path("api/v1/chats/memory/",                 views.DeleteMemoryView.as_view()),
     path("api/v1/chats/<uuid:chat_id>/",          views.ChatDetailView.as_view()),
     path("api/v1/chats/<uuid:chat_id>/message/",  views.MessageView.as_view()),
 ]

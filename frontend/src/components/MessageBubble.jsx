@@ -39,7 +39,7 @@ export default function MessageBubble({ message, isGenerating = false }) {
         
         {/* Avatar */}
         <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${isGenerating ? 'bg-gradient-to-br from-aman-primary to-aman-tertiary shadow-md animate-pulse' : 'bg-white shadow-sm border border-slate-200/50'}`}>
-          <Bot size={16} className={isGenerating ? 'text-white' : 'text-aman-primary'} />
+          <img src="/favicon.ico" alt="Aman" className={`w-5 h-5 object-contain ${isGenerating ? 'opacity-90' : 'opacity-100'}`} />
         </div>
         
         {/* Message Content Area */}

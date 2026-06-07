@@ -28,25 +28,33 @@ Aman is built on the shoulders of giants. Here's what's powering it under the ho
 
 Forget typing out twenty different commands. We've got a `Makefile` that does the heavy lifting for you. Open up a few terminal tabs and let 'er rip:
 
-### 1. Start the Databases
+### 1. Configure Environment Variables
+Before running the application, you need to set up your environment variables. 
+Copy the `.env.example` file in the `backend/` directory to `.env`:
+```bash
+cp backend/.env.example backend/.env
+```
+Open `backend/.env` and fill in your specific values (e.g., `GROQ_API_KEY`, `SECRET_KEY`, etc.).
+
+### 2. Start the Databases
 ```bash
 make up
 ```
 *(This fires up PostgreSQL and Qdrant via Docker.)*
 
-### 2. Start the AI Models
+### 3. Start the AI Models
 ```bash
 make ollama
 ```
 *(Ensure Ollama is running first! This will load the local models we need.)*
 
-### 3. Start the Backend
+### 4. Start the Backend
 ```bash
 make backend
 ```
 *(This syncs your Python dependencies using `uv`, runs migrations, and starts the Django server.)*
 
-### 4. Start the Frontend
+### 5. Start the Frontend
 ```bash
 make frontend
 ```

@@ -28,7 +28,7 @@ class ChatRoomPageView(View):
 class ChatListView(APIView):
 
     def get(self, request):
-        chats = Chat.objects.filter(user=request.user).order_by("-modify_date")
+        chats = Chat.objects.select_related("user").filter(user=request.user).order_by("-modify_date")
         return Response(ChatSerializer(chats, many=True).data)
 
     def post(self, request):
@@ -83,6 +83,17 @@ class DeleteHistoryView(APIView):
         
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+class DeleteMemoryView(APIView):
+    def delete(self, request):
+        user = request.user
+        # Only delete from Qdrant Memory
+        try:
+            from agent.memory.long_term_memory import clear_user_facts
+            clear_user_facts(str(user.id))
+        except Exception as e:
+            logger.error(f"Failed to clear Qdrant memory for user {user.id}: {e}")
+        
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class MessageView(APIView):
     def post(self, request, chat_id):

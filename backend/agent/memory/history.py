@@ -14,7 +14,7 @@ def load_history(chat_id: str) -> list:
     logger.debug(f"History load started | chat_id: {chat_id}")
 
     rows = list(
-        Message.objects.filter(chat_id=chat_id, is_active=True)
+        Message.objects.select_related("chat").filter(chat_id=chat_id, is_active=True)
         .exclude(safety_flag="UNSAFE")
         .order_by("creation_date")
     )

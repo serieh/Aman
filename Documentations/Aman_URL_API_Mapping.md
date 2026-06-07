@@ -1,7 +1,7 @@
 # Aman — Unified URL & API Route Mapping
 ### Comprehensive Directory of Pages, Views, Routes, and JSON Payloads
 
-This document represents the absolute, compiled source of truth for the entire URL space, view configurations, routing tables, and REST API schemas for the **Aman Reformed** backend. 
+This document represents the absolute, compiled source of truth for the entire URL space, view configurations, routing tables, and REST API schemas for the **Aman** backend. 
 
 All user-facing page views and REST endpoints are consolidated below under a single, unified reference guide.
 
@@ -10,7 +10,7 @@ All user-facing page views and REST endpoints are consolidated below under a sin
 ## 1. Django Routing & App Structure
 
 ### 1.1 Flat Application Architecture
-Aman Reformed is organized as a flat set of top-level Django packages under the project root (`backend/`). This maintains high readability and clean module imports:
+Aman is organized as a flat set of top-level Django packages under the project root (`backend/`). This maintains high readability and clean module imports:
 
 ```
 backend/
@@ -112,6 +112,7 @@ All REST endpoints operate on JSON requests/responses and are standardized under
 | **Chat REST API** | `GET` | `/api/v1/chats/` | `ChatListView` | Lists active user chats (ordered by most recent modification) |
 | **Chat REST API** | `POST` | `/api/v1/chats/` | `ChatListView` | Creates a new empty chat session |
 | **Chat REST API** | `DELETE` | `/api/v1/chats/history/` | `DeleteHistoryView` | Deletes all of the user's chat history and wipes long-term memory |
+| **Chat REST API** | `DELETE` | `/api/v1/chats/memory/` | `DeleteMemoryView` | Wipes long-term memory while keeping chat history intact |
 | **Chat REST API** | `GET` | `/api/v1/chats/<uuid:chat_id>/` | `ChatDetailView` | Fetches chat title and all active messages |
 | **Chat REST API** | `PATCH` | `/api/v1/chats/<uuid:chat_id>/` | `ChatDetailView` | Renames a specific chat session |
 | **Chat REST API** | `DELETE` | `/api/v1/chats/<uuid:chat_id>/` | `ChatDetailView` | Deletes specified chat session and all messages/summaries |

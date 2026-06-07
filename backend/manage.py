@@ -3,6 +3,7 @@
 import os
 import sys
 
+os.environ["USER_AGENT"] = "Aman_Reformed_Agent/1.0"
 
 def main():
     """Run administrative tasks."""

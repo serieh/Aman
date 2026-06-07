@@ -11,7 +11,13 @@ export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { chatId } = useParams();
   const user = useAuthStore(state => state.user);
+  const fetchUser = useAuthStore(state => state.fetchUser);
 
+  useEffect(() => {
+    if (!user) {
+      fetchUser();
+    }
+  }, [user, fetchUser]);
   useEffect(() => {
     if (user?.theme === 'dark') {
       document.documentElement.classList.add('dark');

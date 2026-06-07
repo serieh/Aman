@@ -31,6 +31,22 @@ export default function SettingsModal({ onClose }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null); // { type: 'success' | 'error', text: '' }
 
+  // Sync data when user loads
+  useEffect(() => {
+    if (user) {
+      setAccountData({
+        name: user.name || '',
+        birthdate: user.birthdate || '',
+        gender: user.gender || 'female',
+        country: user.country || 'US'
+      });
+      setPrefsData({
+        theme: user.theme || 'light',
+        language: user.language || 'en'
+      });
+    }
+  }, [user]);
+
   // Handlers
   const handleAccountChange = (e) => setAccountData({ ...accountData, [e.target.name]: e.target.value });
   const handlePrefsChange = (e) => setPrefsData({ ...prefsData, [e.target.name]: e.target.value });
@@ -87,6 +103,19 @@ export default function SettingsModal({ onClose }) {
     } catch (err) {
       const detail = err.response?.data?.old_password?.[0] || err.response?.data?.new_password?.[0] || 'Failed to change password.';
       setMessage({ type: 'error', text: detail });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteMemory = async () => {
+    if (!window.confirm("Are you sure you want to delete Aman's long-term memory of you? Your chats will remain intact, but Aman will forget any learned facts.")) return;
+    setLoading(true); setMessage(null);
+    try {
+      await api.delete('/chats/memory/');
+      setMessage({ type: 'success', text: 'AI long-term memory cleared successfully.' });
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Failed to clear memory.' });
     } finally {
       setLoading(false);
     }
@@ -153,9 +182,15 @@ export default function SettingsModal({ onClose }) {
                 <div className="text-sm font-medium text-slate-500">{user?.email}</div>
               </div>
               
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1 ml-1 uppercase tracking-wider">Name</label>
-                <input type="text" name="name" value={accountData.name} onChange={handleAccountChange} className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-white focus:ring-2 focus:ring-aman-primary outline-none transition-all font-medium text-sm" />
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 ml-1 uppercase tracking-wider">Name</label>
+                  <input type="text" name="name" value={accountData.name} onChange={handleAccountChange} className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-white focus:ring-2 focus:ring-aman-primary outline-none transition-all font-medium text-sm" />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold text-slate-500 mb-1 ml-1 uppercase tracking-wider">Birthdate</label>
+                  <input type="date" name="birthdate" value={accountData.birthdate} onChange={handleAccountChange} className="w-full px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-white focus:ring-2 focus:ring-aman-primary outline-none transition-all font-medium text-sm" />
+                </div>
               </div>
 
               <div className="flex gap-3">
@@ -210,8 +245,15 @@ export default function SettingsModal({ onClose }) {
 
               <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
                 <h3 className="text-sm font-bold text-red-600 dark:text-red-400">Danger Zone</h3>
+                <div className="p-4 bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30 rounded-2xl mb-3">
+                  <p className="text-xs text-orange-700 dark:text-orange-400 mb-3 leading-relaxed">This will permanently delete Aman's long-term memory of you (learned facts, preferences), but keep your chat history intact.</p>
+                  <button onClick={handleDeleteMemory} disabled={loading} className="w-full py-2.5 px-4 bg-orange-100 hover:bg-orange-200 dark:bg-orange-900/40 dark:hover:bg-orange-900/60 text-orange-700 dark:text-orange-300 rounded-xl text-sm font-bold transition-colors disabled:opacity-50">
+                    Clear AI Memory Only
+                  </button>
+                </div>
+
                 <div className="p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-2xl">
-                  <p className="text-xs text-red-700 dark:text-red-400 mb-3 leading-relaxed">This will permanently delete all your chats and Aman's long-term memory of you.</p>
+                  <p className="text-xs text-red-700 dark:text-red-400 mb-3 leading-relaxed">This will permanently delete all your chats AND Aman's long-term memory of you.</p>
                   <button onClick={handleDeleteHistory} disabled={loading} className="w-full py-2.5 px-4 bg-red-100 hover:bg-red-200 dark:bg-red-900/40 dark:hover:bg-red-900/60 text-red-700 dark:text-red-300 rounded-xl text-sm font-bold transition-colors disabled:opacity-50">
                     Clear History & Memory
                   </button>

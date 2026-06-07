@@ -8,7 +8,7 @@ from langchain_groq import ChatGroq
 
 load_dotenv()
 
-from .config import LLM_THINKING_MODEL, LLM_FAST_MODEL, LLM_CONTEXT_WINDOW, LLM_REPEAT_PENALTY, LLM_MAX_RETRIES, GROQ_MODEL_NAME
+from .config import LLM_FAST_MODEL, LLM_CONTEXT_WINDOW, LLM_REPEAT_PENALTY, LLM_MAX_RETRIES, GROQ_MODEL_NAME
 from .prompts.summary import SUMMARY_PROMPT
 from .prompts.title import TITLE_PROMPT
 from .tools.rag.RAG import run_rag
@@ -146,27 +146,6 @@ class LLMWrapper:
 
 logger.info("Building LLMs")
 
-local_llm = ChatOllama(
-    model=LLM_THINKING_MODEL,
-    num_ctx=LLM_CONTEXT_WINDOW,
-    keep_alive=-1,
-    repeat_penalty=LLM_REPEAT_PENALTY,
-)
-
-groq_llm = ChatGroq(
-    model_name=GROQ_MODEL_NAME,
-    max_retries=2,
-    max_tokens=1024,
-    api_key=os.getenv("GROQ_API_KEY", "missing_key")
-)
-
-# Bind tools to both models, then create the fallback runnable
-groq_with_tools = groq_llm.bind_tools(tools)
-local_with_tools = local_llm.bind_tools(tools)
-
-llm_thinking_with_tools = groq_with_tools.with_fallbacks([local_with_tools])
-structured_llm_thinking = LLMWrapper(llm_thinking_with_tools)
-
 llm_fast = ChatOllama(
     model=LLM_FAST_MODEL,
     num_ctx=LLM_CONTEXT_WINDOW,
@@ -174,7 +153,20 @@ llm_fast = ChatOllama(
     repeat_penalty=LLM_REPEAT_PENALTY,
     think=False,
 )
-structured_llm_fast = LLMWrapper(llm_fast.bind_tools(tools))
+fast_with_tools = llm_fast.bind_tools(tools)
+structured_llm_fast = LLMWrapper(fast_with_tools)
+
+groq_llm = ChatGroq(
+    model_name=GROQ_MODEL_NAME,
+    max_retries=3,
+    max_tokens=1024,
+    api_key=os.getenv("GROQ_API_KEY", "missing_key")
+)
+
+# Bind tools to both models, then create the fallback runnable
+groq_with_tools = groq_llm.bind_tools(tools)
+llm_thinking_with_tools = groq_with_tools.with_fallbacks([fast_with_tools])
+structured_llm_thinking = LLMWrapper(llm_thinking_with_tools)
 
 
 def llm_summarize(user_message: str):

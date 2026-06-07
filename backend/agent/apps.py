@@ -1,7 +1,7 @@
 # backend/agent/apps.py
 import threading, requests
 from logger import get_logger
-from .config import LLM_FAST_MODEL, LLM_THINKING_MODEL
+from .config import LLM_FAST_MODEL
 from agent.emotion_estimator import estimate_emotion
 
 logger = get_logger(__name__)
@@ -17,6 +17,13 @@ def _preload():
         except Exception as e:
             logger.warning(f"Model preload failed | model: {model} | error: {e}")
             
+    try:
+        from agent.tools.rag.embeddings import get_embedding_model
+        get_embedding_model().embed_query("test")
+        logger.info("Preloaded RAG embedding model")
+    except Exception as e:
+        logger.warning(f"Failed to preload embedding model | error: {e}")
+        
     estimate_emotion("test")
     logger.info("Preloaded emotion estimator")
 

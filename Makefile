@@ -8,7 +8,7 @@ dev:
 
 frontend:
 	@echo "Starting Frontend..."
-	cd frontend && npm install && npm run dev
+	cd frontend && npm install && NODE_OPTIONS="--no-warnings" npm run dev
 
 backend:
 	@echo "Starting Backend..."
