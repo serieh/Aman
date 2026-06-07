@@ -59,23 +59,26 @@ def retrieve_user_facts(user_id: str, query: str = "") -> str:
     vector = embedder.embed_query(query if query else "User profile and facts")
     
     try:
-        results = client.search(
+        results = client.query_points(
             collection_name=QDRANT_USER_COLLECTION,
-            query_vector=vector,
-            query_filter={
-                "must": [
-                    {"key": "user_id", "match": {"value": user_id}}
+            query=vector,
+            query_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="user_id",
+                        match=MatchValue(value=user_id),
+                    ),
                 ]
-            },
+            ),
             limit=5
-        )
+        ).points
         if not results:
             return ""
         facts = [res.payload.get("fact", "") for res in results if res.payload]
         return "\n".join(f"- {f}" for f in facts if f)
-    except Exception:
+    except Exception as e:
+        print(f"DEBUG: Exception in retrieve_user_facts: {e}")
         return ""
-
 
 async def extract_and_save_facts(user_id: str, new_user_message: str, ai_response: str):
     """Background task to extract facts and save to Qdrant."""

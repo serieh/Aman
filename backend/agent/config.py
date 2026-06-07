@@ -23,7 +23,7 @@ LLM_REPEAT_PENALTY = 1.15
 LLM_MAX_RETRIES = 3
 
 # ── Memory ───────────────────────────────────────────────────────────
-MAX_MESSAGES_BEFORE_SUMMARY = 40
+MAX_MESSAGES_BEFORE_SUMMARY = 25
 QDRANT_USER_COLLECTION = "user_memory"
 
 # ── Emotion Estimator ────────────────────────────────────────────────

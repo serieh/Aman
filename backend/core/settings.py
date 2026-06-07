@@ -26,12 +26,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ao*anx+d5&sajyh%fy*!3hl7pgyx-t7n6&%%9q#6s8%y3sm#b2'
+SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-default-dev-key-change-me")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1", "t")
 
-ALLOWED_HOSTS = ["*"] # Changed to work with any Host
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
 
 
 # For JWT Authentication
@@ -159,9 +159,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-# For now allow all
-Cors_Allow_All_Origins = True
-Cors_Allow_Credentials = True
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 CHANNEL_LAYERS = {
     "default": {

@@ -52,6 +52,5 @@ def build_system_prompt(
         ])
         return "\n\n".join(parts)
     except Exception as e:
-        # CORRECT LOG: Catching any issues if dynamic context injection fails
         logger.error(f"Failed to build system prompt | error: {str(e)}")
         raise

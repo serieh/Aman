@@ -76,6 +76,39 @@ class LLMWrapper:
         # Fallback: use the cleaned text as content directly
         return ResponseFormat(content=clean_text)
 
+    async def ainvoke(self, messages, config=None):
+        if config:
+            response = await self.llm.ainvoke(messages, config=config)
+        else:
+            response = await self.llm.ainvoke(messages)
+            
+        # If the LLM invoked a tool, return the AIMessage directly
+        if getattr(response, "tool_calls", None):
+            return response
+            
+        raw_text = response.content
+        if "reasoning_content" in response.additional_kwargs and response.additional_kwargs["reasoning_content"]:
+            raw_text = "<think>\n" + response.additional_kwargs["reasoning_content"] + "\n</think>\n" + raw_text
+            
+        # Strip <think> block if present
+        clean_text = re.sub(r"<think>.*?</think>", "", raw_text, flags=re.DOTALL).strip()
+        if not clean_text:
+            clean_text = raw_text # Fallback
+            
+        # Try parsing as JSON
+        try:
+            json_match = re.search(r"\{.*\}", clean_text, flags=re.DOTALL)
+            if json_match:
+                json_str = json_match.group(0)
+                data = json.loads(json_str)
+                if "content" in data:
+                    return ResponseFormat(content=data.get("content", ""))
+        except json.JSONDecodeError:
+            pass
+            
+        # Fallback: use the cleaned text as content directly
+        return ResponseFormat(content=clean_text)
+
     def stream(self, messages):
         in_reasoning = False
         reasoning_started = False
@@ -123,6 +156,7 @@ local_llm = ChatOllama(
 groq_llm = ChatGroq(
     model_name=GROQ_MODEL_NAME,
     max_retries=2,
+    max_tokens=1024,
     api_key=os.getenv("GROQ_API_KEY", "missing_key")
 )
 

@@ -20,7 +20,8 @@ class AgentState(TypedDict):
     safety_context: dict | None
     
 
-def agent_node(state: AgentState, config: RunnableConfig):
+
+async def agent_node(state: AgentState, config: RunnableConfig):
     chat_id = state.get("chat_id", "unknown")
     model_preference = state.get("model_preference", "2")
     logger.info(f"Agent node processing | chat_id: {chat_id} | model_tier: {model_preference}")
@@ -30,7 +31,7 @@ def agent_node(state: AgentState, config: RunnableConfig):
     for attempt in range(1, LLM_MAX_RETRIES + 1):
         try:
             # Pass config so astream_events can intercept the chat model stream
-            response = llm.invoke(state["messages"], config=config)
+            response = await llm.ainvoke(state["messages"], config=config)
             
             # If it's a tool call, update messages state and continue graph execution
             if getattr(response, "tool_calls", None):
