@@ -15,16 +15,17 @@ export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
   const [editTitle, setEditTitle] = useState("");
 
   useEffect(() => {
-    const fetchChats = async () => {
-      try {
-        const { data } = await api.get('/chats/');
-        setChats(data);
-      } catch (err) {
-        console.error("Failed to fetch chats", err);
-      }
-    };
-    fetchChats();
+    // No backend fetching needed for showcase
   }, [setChats]);
+
+  const staticChats = [
+    { chat_id: '1', title: '1. Introduction & Objectives' },
+    { chat_id: '2', title: '2. Unique Features & Innovations' },
+    { chat_id: '3', title: '3. Latency & Efficiency' },
+    { chat_id: '4', title: '4. Prototype Showcase' },
+    { chat_id: '5', title: '5. Conclusion & Key Findings' },
+    { chat_id: '6', title: '6. Closing Slide' }
+  ];
 
   const handleNewChat = () => {
     useChatStore.getState().setMessages([]);
@@ -38,15 +39,9 @@ export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
   };
 
   const handleLogout = async () => {
-    try {
-      const refresh = localStorage.getItem('refresh');
-      await api.post('/auth/logout/', { refresh });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      logout();
-      navigate('/login');
-    }
+    // mock logout
+    logout();
+    navigate('/login');
   };
 
   const handleSaveTitle = async (id, e) => {
@@ -111,7 +106,7 @@ export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
           <ul className="relative mt-1">
             {/* Sliding Indicator */}
             {(() => {
-              const activeIndex = chats.findIndex(c => c.chat_id === chatId);
+              const activeIndex = staticChats.findIndex(c => c.chat_id === chatId);
               if (activeIndex === -1) return null;
               return (
                 <div 
@@ -120,7 +115,7 @@ export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
                 />
               );
             })()}
-            {chats.map(chat => {
+            {staticChats.map((chat, index) => {
               const isGeneratingTitle = generatingTitleChatId === chat.chat_id;
               const displayTitle = (!chat.title || chat.title === 'Untitled Chat') && isGeneratingTitle;
               const isEditing = editingChatId === chat.chat_id;
@@ -162,37 +157,15 @@ export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
                         </span>
                       </div>
                     ) : (
-                      <span className="truncate flex-1 pr-12">{chat.title || "Untitled Chat"}</span>
+                      <span className="flex-1 pr-2 leading-tight break-words whitespace-normal">{chat.title || "Untitled Chat"}</span>
                     )}
                   </Link>
 
-                  {/* Actions */}
-                  {!isEditing && (
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800/90 rounded-lg p-0.5 shadow-sm border border-slate-200 dark:border-slate-700 backdrop-blur-sm">
-                      <button 
-                        onClick={(e) => { 
-                          e.preventDefault(); 
-                          setEditTitle(chat.title || "Untitled Chat"); 
-                          setEditingChatId(chat.chat_id); 
-                        }}
-                        className="p-1.5 text-slate-500 hover:text-aman-primary transition-colors rounded hover:bg-white dark:hover:bg-slate-700"
-                        title="Rename"
-                      >
-                        <Edit2 size={13} />
-                      </button>
-                      <button 
-                        onClick={(e) => handleDeleteChat(chat.chat_id, e)}
-                        className="p-1.5 text-slate-500 hover:text-red-500 transition-colors rounded hover:bg-white dark:hover:bg-slate-700"
-                        title="Delete"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  )}
+
                 </li>
               );
             })}
-            {chats.length === 0 && (
+            {staticChats.length === 0 && (
               <li className="text-sm text-slate-400 px-3 py-4 text-center italic">No conversations yet</li>
             )}
           </ul>
