@@ -154,7 +154,7 @@ Aman uses two LLM tiers, selected per request via the `model` parameter in reque
 
 | Tier | Model | Use Case | Ollama Setting |
 |---|---|---|---|
-| `"1"` (thinking) | `gemma4:26b` | Complex emotional conversations, nuanced responses | `think=True` (default) - Loaded dynamically to save VRAM |
+| `"1"` (thinking) | `openai/gpt-oss-120b` (Groq) | Complex emotional conversations, nuanced responses | API-based for deep reasoning capabilities |
 | `"2"` (fast) | `gemma4:e2b` | Quick exchanges, summarization, lower latency | `think=False` - Auto-preloads |
 
 Both models are configured with:
@@ -371,7 +371,7 @@ Near-instant. High-recall catch for explicit crisis language.
 Runs only if Gate 1 did not fire (performance optimization).
 - Embeds user message with **all-MiniLM-L6-v2** (384-dim — lighter than BGE-M3 for speed)
 - Queries the `crisis_knowledge` Qdrant collection (~20 curated crisis phrases, Arabic + English)
-- Cosine similarity threshold: **≥ 0.75** → crisis flagged
+- Cosine similarity threshold: **≥ 0.85** → crisis flagged
 
 ```python
 crisis_flag = keyword_hit OR semantic_hit

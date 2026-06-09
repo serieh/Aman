@@ -58,6 +58,6 @@ To achieve the best UI/UX experience and match the dynamic nature of the designs
     *   **Actions:** A vibrant "Save Changes" pill button and a subtle "Cancel" button.
 
 ## 5. Notes on Implementation vs. Design
-- **Future Features (Mic / Attachments):** The microphone and attachment icons are present in the design for future-proofing. However, backend support for voice input (STT) and file uploads are currently marked as `[PLANNED]`. These buttons should be visually present but either disabled or trigger a "Coming Soon" toast message when clicked.
+- **Future Features (Mic / Attachments):** The microphone and attachment icons are present in the design for future-proofing. Backend support for Voice Mode has been established via the frontend Voice toggle, sending `mode: "voice"` payloads via WebSockets, laying the foundation for STT/TTS pipeline integration. File uploads are currently marked as `[PLANNED]`.
 - **Model Selection Implementation:** The backend explicitly supports a `model` parameter (`"1"` for thinking, `"2"` for fast). The UI must dynamically pass this selection in the payload to the `/api/v1/chats/<uuid>/message/` endpoint.
 - **SPA vs Django Templates:** The backend currently serves separate HTML templates for different routes (`/login/`, `/settings/`, `/dashboard/`). For the best UX, these should be replaced or bypassed. The React frontend should be built as a single bundle (SPA) that exclusively consumes the REST APIs (`/api/v1/...`), taking over all routing responsibilities.

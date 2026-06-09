@@ -326,7 +326,7 @@ All REST endpoints operate on JSON requests/responses and are standardized under
     ```
     *   `content`: The textual prompt from the user (string, maximum 1000 characters).
     *   `model`: The preferred Ollama model tier (optional choice).
-        *   `"1"`: Gemma-4 Thinking Model (`gemma4:26b`) - higher quality, slower reasoning.
+        *   `"1"`: Groq Thinking Model (`openai/gpt-oss-120b`) - higher quality, slower reasoning.
         *   `"2"` (Default): Gemma-4 Fast Model (`gemma4:e2b`) - speedy response times.
 *   **Success Response (`200 OK`)**:
     ```json
