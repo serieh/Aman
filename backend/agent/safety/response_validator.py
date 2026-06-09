@@ -111,16 +111,10 @@ def validate_response(
     if unverified_nums:
         return {"safe": False, "reason": f"Unverified phone numbers detected: {unverified_nums}"}
 
-    # If it's NOT a crisis, we don't want hotlines or routing scripts at all
+    # If it's NOT a crisis, we don't want hotlines
     if not crisis_flag:
         if any(p.search(response_text) for p in HOTLINE_KEYWORDS):
             return {"safe": False, "reason": "Hotline keywords are not allowed outside of a crisis."}
-        
-        if contains_routing_script(response_text):
-            return {
-                "safe": False,
-                "reason": "Routing script detected on non-crisis turn — use sanctuary listening instead.",
-            }
 
     if len(response_text.strip()) < 5:
         return {"safe": False, "reason": "Response too short."}

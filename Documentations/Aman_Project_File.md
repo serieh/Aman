@@ -611,3 +611,11 @@ All routes mapped in Django apps are detailed in `URL_API_Mapping.md`. Note that
 - **Auth & State:** Fixed token caching issues by implementing an Axios 401 response interceptor in `axios.js` to automatically clear expired JWTs and redirect to `/login`. Refactored `AppLayout.jsx` and `useAuthStore.js` to hydrate `user` profile data automatically on component mount.
 - **Database Optimization:** Eliminated N+1 ORM queries by injecting `select_related('chat')` and `select_related('user')` into `history.py` and `views.py`.
 - **Memory Management:** Added a `DeleteMemoryView` to `/api/v1/chats/memory/` enabling users to selectively wipe Qdrant vector memory (`clear_user_facts`) without destroying Postgres chat histories. Bound this endpoint to the "Clear AI Memory Only" button in the settings Danger Zone.
+
+### v6.2 - Safety & Language Adherence Hardening (June 2026)
+- **Groq Token Limit Fix:** Reduced RAG `TOP_K_RESULTS` from 10 to 3 to prevent context size explosions (>8000 tokens) that crashed the Groq API and triggered silent fallbacks to the less capable `gemma4:e2b` model.
+- **Tool-Induced Amnesia Fix:** Appended a strict post-tool safety reminder to the `rag_search` output to prevent the LLM from dropping its persona and emergency context after retrieving hotline numbers.
+- **Crisis Response Precision:** Reworked the RED tier safety prompt to distinguish between **PASSIVE** danger (venting) and **EXPLICIT/ACTIVE** danger (explicit self-harm threats). Aman now behaves naturally for passive venting and shifts to a focused, active safety protocol only when strictly necessary.
+- **Language Lock:** Implemented explicit overriding rules in the safety prompt requiring the agent to always use the user's language during crises, preventing unwanted reversions to English.
+- **Voice Mode Foundation:** Added a voice mode toggle in the frontend `InputBar.jsx` and updated the `useChatStore` and websocket consumers to accept and propagate the `mode` parameter.
+- **Prompt Architecture:** Removed contradictory persona instructions ("not a crisis counselor") from `core.py` to ensure the RED crisis overrides take precedence.

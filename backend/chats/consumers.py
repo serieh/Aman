@@ -34,16 +34,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps({"error": "Invalid JSON"}))
             return
 
-        message = data.get("message")
+        message = data.get("message", "").strip()
         model_preference = data.get("model_preference", "2")
+        mode = data.get("mode", "normal")
 
         if not message:
-            await self.send(text_data=json.dumps({"error": "Message is required"}))
+            await self.send(text_data=json.dumps({"error": "Empty message"}))
             return
 
         try:
             # Yield chunks or signals back to client
-            async for payload in run_agent(str(self.user.id), self.chat_id, message, model_preference):
+            async for payload in run_agent(str(self.user.id), self.chat_id, message, model_preference, mode):
                 if isinstance(payload, dict):
                     await self.send(text_data=json.dumps(payload))
                 else:

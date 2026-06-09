@@ -11,7 +11,7 @@ QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
 QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
 
 CRISIS_COLLECTION   = "crisis_knowledge"
-CRISIS_THRESHOLD    = 0.75
+CRISIS_THRESHOLD    = 0.85
 CRISIS_VECTOR_SIZE  = 384  # all-MiniLM-L6-v2 output size
 
 # Lightweight embedding model for crisis detection only

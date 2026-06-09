@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Paperclip, ArrowUp, Square, Sparkles, Zap } from 'lucide-react';
+import { Paperclip, ArrowUp, Square, Sparkles, Zap, Mic, MicOff } from 'lucide-react';
 import { useChatStore } from '../store/useChatStore';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 
 export default function InputBar({ chatId }) {
-  const { inputMessage, setInputMessage, triggerSend, setTriggerSend, addMessage, model, setModel, messages, setMessages, chats, setChats, setCurrentChat, setGeneratingTitleChatId, updateChatTitle } = useChatStore();
+  const { inputMessage, setInputMessage, triggerSend, setTriggerSend, addMessage, model, setModel, messages, setMessages, chats, setChats, setCurrentChat, setGeneratingTitleChatId, updateChatTitle, voiceMode, setVoiceMode } = useChatStore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [abortController, setAbortController] = useState(null);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
@@ -105,6 +105,7 @@ export default function InputBar({ chatId }) {
         ws.send(JSON.stringify({
           message: messageToSend,
           model_preference: model,
+          mode: voiceMode ? "voice" : "normal",
         }));
       };
 
@@ -294,6 +295,17 @@ export default function InputBar({ chatId }) {
             </div>
           )}
         </div>
+
+        {/* Voice Mode Toggle */}
+        <button
+          type="button"
+          onClick={() => setVoiceMode(!voiceMode)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${voiceMode ? 'bg-aman-primary/10 text-aman-primary' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+          title={voiceMode ? "Voice Mode Active" : "Normal Text Mode"}
+        >
+          {voiceMode ? <Mic size={14} className="animate-pulse" /> : <MicOff size={14} />}
+          {voiceMode ? "Voice" : "Text"}
+        </button>
 
       </div>
     </div>

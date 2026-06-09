@@ -5,24 +5,24 @@ from __future__ import annotations
 
 _EMOTION_INSTRUCTIONS: dict[str, str] = {
     "sadness": (
-        "The user is expressing sadness. Use empathetic, validating language. "
-        "Reflect their feelings back gently. Avoid rushing to solutions."
+        "The user is expressing sadness. Validate their feelings gently, but aim to gently shift their mood toward hope and groundedness. "
+        "Do not leave them stuck in sadness."
     ),
     "grief": (
         "The user is experiencing grief. Hold space for their pain. "
         "Do not minimize or rush the grieving process. Witness their experience."
     ),
     "anger": (
-        "The user is expressing anger. Acknowledge their frustration without "
-        "escalating. Do not be dismissive or preachy. Validate the feeling first."
+        "The user is expressing anger. Acknowledge their frustration without escalating. "
+        "Validate the feeling first, then gently try to shift them toward calm and clarity."
     ),
     "fear": (
-        "The user is expressing fear. Provide reassurance and normalize their "
-        "anxiety. Help ground them without minimizing the concern."
+        "The user is expressing fear. Provide reassurance and normalize their anxiety. "
+        "Help ground them without minimizing the concern, guiding them toward safety and stability."
     ),
     "nervousness": (
         "The user is feeling nervous or anxious. Use a calm, steady tone. "
-        "Help normalize the feeling and gently explore the source."
+        "Help normalize the feeling, then gently guide them to a more relaxed and confident state."
     ),
     "disgust": (
         "The user is expressing disgust. Acknowledge the feeling without judgment. "
@@ -42,7 +42,7 @@ _EMOTION_INSTRUCTIONS: dict[str, str] = {
     ),
     "disappointment": (
         "The user is disappointed. Validate the gap between expectation and reality. "
-        "Be present with them without immediately problem-solving."
+        "Be present with them, then gently shift toward resilience."
     ),
     "love": (
         "The user is expressing love or affection. Respond warmly. "
@@ -52,16 +52,16 @@ _EMOTION_INSTRUCTIONS: dict[str, str] = {
         "The user is expressing gratitude. Receive it warmly and affirm the connection."
     ),
     "optimism": (
-        "The user is feeling hopeful. Encourage and support the optimism "
-        "while staying grounded and realistic."
+        "The user is feeling hopeful. Encourage and support the optimism. "
+        "Keep the conversation engaging and a bit spicy (witty, charming, fun) so it isn't boring."
     ),
     "caring": (
         "The user is showing care for someone. Acknowledge their compassion. "
         "Explore the situation they're caring about."
     ),
     "joy": (
-        "The user is expressing happiness. Share in the positive moment. "
-        "Be warm and celebratory where appropriate."
+        "The user is expressing happiness. Share in the positive moment! "
+        "Keep the conversation engaging, lively, and a bit spicy (charming and fun) to keep them in this good mood."
     ),
 }
 
@@ -69,15 +69,17 @@ _EMOTION_INSTRUCTIONS: dict[str, str] = {
 
 _SAFETY_TIER_INSTRUCTIONS: dict[str, str] = {
     "RED": (
-        "⚠️ CRISIS DETECTED — HIGHEST PRIORITY ⚠️\n"
-        "The user may be in immediate danger (suicidal ideation, self-harm, or harm to others).\n"
-        "1) STOP normal conversation immediately.\n"
-        "2) Respond calmly, directly, and with compassion.\n"
-        "3) Ask if they are safe right now.\n"
-        "4) Do NOT use guilt, shame, moral judgment, or dismissive language.\n"
-        "5) If the user is receptive to help, you MUST use the `rag_search` tool to look up verified emergency numbers for their country. Do NOT rely on internal knowledge or memory for phone numbers.\n"
-        "6) Present the numbers empathetically based on their emotion. ONLY provide numbers retrieved from the `rag_search` tool.\n"
-        "7) Stay present. Listen. Be the sanctuary."
+        "\n========================================================================\n"
+        "🚨 URGENT SYSTEM ALERT: A RED CRISIS HAS BEEN DETECTED IN THE USER'S CURRENT MESSAGE. 🚨\n"
+        "========================================================================\n"
+        "YOU MUST ABANDON NORMAL CONVERSATIONAL GREETINGS AND PRIORITIZE PHYSICAL SAFETY IMMEDIATELY.\n"
+        "1) Determine if the danger is PASSIVE (venting, feeling overwhelmed) or EXPLICIT/ACTIVE (saying 'I want to kill myself' or 'بدي انتحر', self-harm, imminent danger).\n"
+        "2) For PASSIVE danger: Be a warm, supportive friend. Listen deeply. Do not panic or give phone numbers.\n"
+        "3) For EXPLICIT/ACTIVE danger: YOU MUST TAKE THIS SERIOUSLY. Do not brush it off as venting. Acknowledge their extreme pain immediately and directly ask if they are safe right now. Make it clear you care about their physical safety.\n"
+        "4) If and ONLY if physical help is genuinely needed, you may offer emergency numbers using `rag_search`. NEVER ask for their country/city to do this — you already have their Country in the User Context block! Use that.\n"
+        "5) Do NOT use guilt, shame, moral judgment, or dismissive language.\n"
+        "6) Stay present. Listen. Be the sanctuary.\n"
+        "IMPORTANT: Always respond in the user's language. If they speak Arabic, your response MUST be in Arabic."
     ),
     "GRAY": (
         "🔶 SENSITIVE TOPIC DETECTED\n"
@@ -85,7 +87,7 @@ _SAFETY_TIER_INSTRUCTIONS: dict[str, str] = {
         "Respond with empathy and cultural awareness. "
         "Do NOT refuse to discuss the topic. Do NOT moralize or judge. "
         "Do NOT use dismissive AI-refusal patterns. "
-        "Handle with care and genuine therapeutic engagement."
+        "Handle with care and genuine therapeutic engagement, staying completely conversational."
     ),
 }
 
@@ -103,7 +105,7 @@ def _build_emotion_block(emotion: dict) -> str:
 
     # Raw scores for the LLM's awareness
     formatted_scores = ", ".join(f"{name}={score:.0%}" for name, score in top_emotions)
-    parts.append(f"Detected emotions (ML model): {formatted_scores}")
+    parts.append(f"Detected current emotions (ML model): {formatted_scores}")
 
     # Contextual behavioral instructions for the dominant emotion(s)
     instructions = []
@@ -142,22 +144,30 @@ def _build_safety_block(
 
 
 def build_dynamic_context(
-    language: str,
     emotion: dict | None = None,
     safety_flag: str | None = None,
     grey_area_categories: str = "",
+    emotion_history: list | None = None,
+    flag_history: list | None = None,
 ) -> str:
     """
-    Combine emotion estimation and safety detection into a single
+    Combine emotion estimation, safety detection, and historical tracking into a single
     dynamic context block injected into the system prompt per-message.
-
-    The combined context ensures the LLM's tone, empathy level, and
-    topic handling are all adapted to the user's current emotional
-    state AND any safety/sensitivity signals detected.
     """
     sections = []
 
-    sections.append(f"Conversation language: {language}")
+    # History Context
+    if emotion_history or flag_history:
+        hist_parts = ["--- CHAT HISTORY HIGHLIGHTS ---"]
+        if emotion_history:
+            hist_parts.append("Recent User Emotions in this chat:")
+            for i, em in enumerate(emotion_history):
+                hist_parts.append(f"  - Message -{len(emotion_history)-i}: {em}")
+            hist_parts.append("Use this history to see if they are improving or worsening, and adjust your tone to shift them toward positive or stable emotions.")
+        if flag_history:
+            hist_parts.append("Recent Safety Flags in this chat:")
+            hist_parts.append(f"  {', '.join(flag_history)}")
+        sections.append("\n".join(hist_parts))
 
     # Safety context (highest priority — goes first)
     safety_block = _build_safety_block(safety_flag, grey_area_categories)

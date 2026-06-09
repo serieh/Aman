@@ -4,7 +4,7 @@ export const useChatStore = create((set) => ({
   chats: [],
   currentChat: null,
   messages: [],
-  model: '2', // Default: fast model
+  model: '1', // Default: thinking model
   inputMessage: '',
   triggerSend: false,
   generatingTitleChatId: null, // Track which chat is waiting for a title
@@ -16,6 +16,8 @@ export const useChatStore = create((set) => ({
   addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
   setModel: (model) => set({ model }),
   setGeneratingTitleChatId: (id) => set({ generatingTitleChatId: id }),
+  voiceMode: false,
+  setVoiceMode: (voiceMode) => set({ voiceMode }),
   updateChatTitle: (chatId, title) => set((state) => ({
     chats: state.chats.map(c => c.chat_id === chatId ? { ...c, title } : c),
     generatingTitleChatId: state.generatingTitleChatId === chatId ? null : state.generatingTitleChatId,

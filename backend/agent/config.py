@@ -53,7 +53,7 @@ QDRANT_COLLECTION = "rag_knowledge"
 EMBEDDINGS_MODEL = "BAAI/bge-m3"
 EMBEDDINGS_VECTOR_SIZE = 1024
 EMBEDDINGS_DEVICE = "cuda" # "cpu" or "cuda"
-TOP_K_RESULTS = 10 # 3
+TOP_K_RESULTS = 3
 
 from pathlib import Path
 

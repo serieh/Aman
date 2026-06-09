@@ -35,8 +35,8 @@ def _generate_title_background(user_message: str, chat_id: str):
         close_old_connections()
 
 
-async def run_agent(user_id: str, chat_id: str, user_message: str, model_preference: str = "2"):
-    logger.info(f"Async Agent runner started | chat_id: {chat_id} | id: {user_id}")
+async def run_agent(user_id: str, chat_id: str, user_message: str, model_preference: str = "2", mode: str = "normal"):
+    logger.info(f"Async Agent runner started | chat_id: {chat_id} | id: {user_id} | mode: {mode}")
 
     try:
         # Load history synchronously using thread
@@ -65,6 +65,7 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
                 f"Name: {user.name}\n"
                 f"Age: {age}\n"
                 f"Gender: {user.gender}\n"
+                f"Country: {user.country}\n"
             )
         except Exception:
             user_context = ""
@@ -74,11 +75,38 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
         if facts:
             user_context += f"\nHere are some permanent facts you remember about the user:\n{facts}\n"
 
+        # Fetch recent emotion and flag history
+        def _fetch_histories():
+            from chats.models import Message
+            recent_msgs = Message.objects.filter(chat_id=chat_id, role="user").order_by("-creation_date")[:5]
+            emotions = []
+            flags = []
+            for m in reversed(recent_msgs):
+                if m.emotional_state:
+                    import json
+                    em_dict = m.emotional_state
+                    if isinstance(em_dict, str):
+                        try:
+                            em_dict = json.loads(em_dict)
+                        except:
+                            em_dict = {}
+                    if em_dict and isinstance(em_dict, dict):
+                        top = ", ".join(f"{k}={int(v * 100)}%" for k, v in list(em_dict.items())[:2])
+                        emotions.append(top)
+                if m.safety_flag and m.safety_flag not in ["SAFE", "None", None]:
+                    flags.append(m.safety_flag)
+            return emotions, flags
+            
+        emotion_history, flag_history = await asyncio.to_thread(_fetch_histories)
+
         system_prompt = build_system_prompt(
             emotion=emotion,
             safety_flag=safety_tier,
             grey_area_categories=category_hints,
             user_context=user_context,
+            mode=mode,
+            emotion_history=emotion_history,
+            flag_history=flag_history,
         )
 
         messages = [

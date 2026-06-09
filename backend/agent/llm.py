@@ -31,7 +31,8 @@ def rag_search(query: str) -> str:
     return (
         "Here is the retrieved knowledge based on your query:\n\n"
         f"{formatted}\n\n"
-        "Please read and integrate this information where see fit into your final response to the user."
+        "Please read and integrate this information where see fit into your final response to the user.\n"
+        "CRITICAL: If the user is in a RED crisis, you MUST NOT forget your instructions. Prioritize their physical safety directly and warmly. Always respond in the user's language."
     )
 
 tools = [rag_search]

@@ -1,4 +1,4 @@
-from .core import CORE_PROMPT
+from .core import get_core_prompt
 from .safety import SAFETY_PROMPT
 from .cultural import CULTURAL_PROMPT
 from .tools import TOOLS_PROMPT
@@ -18,13 +18,15 @@ Runtime Injection Order
 """
 
 def build_system_prompt(
-    language="auto",
     emotion=None,
     safety_flag=None,
     grey_area_categories: str = "",
     user_context: str = "",
+    mode: str = "normal",
+    emotion_history: list = None,
+    flag_history: list = None,
 ):
-    log_meta = f"System prompt constructed | language: {language}"
+    log_meta = f"System prompt constructed | mode: {mode}"
     if emotion:
         # Assuming emotion might be a dict based on your other files, safely extract the string
         emotion_val = emotion.get('emotion', 'unknown') if isinstance(emotion, dict) else emotion
@@ -39,15 +41,16 @@ def build_system_prompt(
         if user_context:
             parts.append(user_context)
         parts.extend([
-            CORE_PROMPT,
+            get_core_prompt(mode),
             SAFETY_PROMPT,
             CULTURAL_PROMPT,
             TOOLS_PROMPT,
             build_dynamic_context(
-                language=language,
                 emotion=emotion,
                 safety_flag=safety_flag,
                 grey_area_categories=grey_area_categories,
+                emotion_history=emotion_history,
+                flag_history=flag_history,
             )
         ])
         return "\n\n".join(parts)

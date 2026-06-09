@@ -112,12 +112,13 @@ class MessageView(APIView):
 
         user_message = serializer.validated_data["content"]
         model_preference = serializer.validated_data.get("model", "2")
+        mode = request.data.get("mode", "normal")
         user_id = str(request.user.id)
         chat_id_str = str(chat_id)
 
         logger.info(
             f"MessageView dispatching to agent | chat_id: {chat_id_str} "
-            f"| user_id: {user_id} | model: {model_preference}"
+            f"| user_id: {user_id} | model: {model_preference} | mode: {mode}"
         )
 
         from django.http import StreamingHttpResponse
@@ -127,6 +128,7 @@ class MessageView(APIView):
                 chat_id=chat_id_str,
                 user_message=user_message,
                 model_preference=model_preference,
+                mode=mode,
             )
             return StreamingHttpResponse(generator, content_type='text/plain')
         except Exception as e:
