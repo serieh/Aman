@@ -69,6 +69,14 @@ def estimate_emotion(text: str) -> dict:
         # Sort by confidence descending
         filtered = dict(sorted(filtered.items(), key=lambda x: x[1], reverse=True))
 
+        # Down-weight neutral if a strong emotion is present
+        strong_emotions = ["sadness", "anger", "fear", "grief", "disappointment", "remorse", "disgust", "nervousness"]
+        if any(e in filtered and filtered[e] >= 0.10 for e in strong_emotions) and "neutral" in filtered:
+            filtered["neutral"] = round(filtered["neutral"] * 0.1, 4)
+            if filtered["neutral"] < EMOTION_CONFIDENCE_THRESHOLD:
+                del filtered["neutral"]
+            filtered = dict(sorted(filtered.items(), key=lambda x: x[1], reverse=True))
+
         # top_emotion = next(iter(filtered), "neutral")
         # top_score = filtered.get(top_emotion, 0.0)
         logger.debug(f"Emotion estimated | chunks: {num_chunks} | total_labels: {len(filtered)}")

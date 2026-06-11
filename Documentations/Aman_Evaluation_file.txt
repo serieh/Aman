@@ -118,3 +118,15 @@
 
 *
 **Defending Your Results:** If examiners ask why Arabic RAG precision might be slightly lower than English, you can justify it by explaining that Arabic has complex morphological structures and dialects, though the BAAI/bge-m3 model mitigates this effectively.
+
+---
+
+### 5. Recent Stress Tests & Bug Findings (June 2026)
+
+During intensive adversarial testing, several edge-case vulnerabilities were discovered and patched:
+
+*   **RAG Language Crossover (Hallucination):** The LLM previously hallucinated by directly quoting English RAG documents instead of translating them into Arabic as requested. This was resolved by enforcing implicit translation directives directly inside the `TOOLS_PROMPT`.
+*   **Groq API Safety Alignment Refusals:** Groq's highly restrictive alignment prevents it from generating responses to prompts detailing severe trauma or suicidal ideation, resulting in empty responses. 
+*   **LLM Fallback Integration:** To combat Groq refusals, LangChain's `.with_fallbacks()` mechanism was implemented, seamlessly routing blocked queries to the local `gemma4:e2b` Ollama instance.
+*   **WebSocket Serialization Crash:** A critical bug in `runner.py` caused the Django Daphne server to crash with a JSON serialization error (`TypeError: Object of type ToolMessage is not JSON serializable`) when attempting to stream the internal `rag_search` tool execution. Output text extraction was added to serialize tool payloads cleanly.
+*   **Safety System False Positives:** The output `response_validator.py` was too rigid, accidentally blocking Aman when he provided clinical disclaimers or offered hotlines. The validation rules were relaxed to allow clinical terminology and non-crisis hotline provisioning. An empathetic human fallback was also added for cases where generation completely fails.

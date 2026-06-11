@@ -1,6 +1,9 @@
 import asyncio
 import os
+import sys
 import django
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend')))
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 django.setup()
@@ -12,11 +15,7 @@ from langchain_core.messages import SystemMessage, HumanMessage
 
 async def main():
     user_message = "انا بدي انتحر"
-    safety = run_input_safety(user_message)
-    system_prompt = build_system_prompt(
-        safety_flag=safety.get("safety_tier"),
-        mode="normal",
-    )
+    system_prompt = "Reply strictly with three words: One two three"
     
     messages = [
         SystemMessage(content=system_prompt),
@@ -27,14 +26,14 @@ async def main():
         "messages": messages,
         "user_id": "test_user",
         "chat_id": "test_chat",
-        "model_preference": "1" # Thinking Model!
+        "model_preference": "1"
     }
     
-    print("Running graph...")
+    print("--- Testing GRAPH astream_events ---")
     async for event in GRAPH.astream_events(state_input, version="v1"):
         if event["event"] == "on_chat_model_stream":
             chunk = event["data"]["chunk"]
-            if chunk.content:
-                print(chunk.content, end="", flush=True)
+            name = event["name"]
+            print(f"[{name}] chunk_content: {repr(chunk.content)}")
 
 asyncio.run(main())

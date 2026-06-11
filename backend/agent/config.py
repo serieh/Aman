@@ -17,6 +17,7 @@ FALLBACK_RESPONSE = {
 # ── LLM Models ───────────────────────────────────────────────────────
 LLM_FAST_MODEL = "gemma4:e2b"   # danielsheep/gpt-oss-20b-Unsloth:latest  # gemma4:e2b     # Lower quality, faster
 GROQ_MODEL_NAME = "openai/gpt-oss-120b"  # For RAG and thinking
+GROQ_SECONDARY_MODEL_NAME = "llama-3.3-70b-versatile" # 3-tier fallback
 LLM_CONTEXT_WINDOW = 4096   # 8192
 LLM_REPEAT_PENALTY = 1.15
 LLM_MAX_RETRIES = 3

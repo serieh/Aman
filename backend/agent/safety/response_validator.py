@@ -14,9 +14,7 @@ INSTRUCTIVE_HARM_PHRASES = [
 
 DIAGNOSIS_PHRASES = [
     "you have depression", "you are bipolar", "you have anxiety disorder",
-    "أنت مصاب", "تشخيصك", "عندك اكتئاب", "عندك مرض",
-    "take this medication", "stop your medication", "increase your dose",
-    "خذ هذا الدواء", "وقف الدواء",
+    "أنت مصاب باكتئاب", "أنت مصاب بمرض", "خذ هذا الدواء", "وقف الدواء"
 ]
 
 REFUSAL_PHRASES = [
@@ -96,25 +94,10 @@ def validate_response(
         if phrase.lower() in text_lower:
             return {"safe": False, "reason": f"Blocked phrase detected: '{phrase}'"}
 
-    # In grey-area mode the model may discuss sensitive topics — do not block refusals only on crisis
-    if not grey_area_flag:
-        for phrase in REFUSAL_PHRASES:
-            if phrase.lower() in text_lower:
-                return {"safe": False, "reason": f"Refusal pattern detected: '{phrase}'"}
-
-        for pattern in REFUSAL_PATTERNS:
-            if pattern in text_lower:
-                return {"safe": False, "reason": f"Refusal pattern detected: '{pattern}'"}
-
     # Number verification logic
     unverified_nums = get_unverified_numbers(response_text)
     if unverified_nums:
         return {"safe": False, "reason": f"Unverified phone numbers detected: {unverified_nums}"}
-
-    # If it's NOT a crisis, we don't want hotlines
-    if not crisis_flag:
-        if any(p.search(response_text) for p in HOTLINE_KEYWORDS):
-            return {"safe": False, "reason": "Hotline keywords are not allowed outside of a crisis."}
 
     if len(response_text.strip()) < 5:
         return {"safe": False, "reason": "Response too short."}

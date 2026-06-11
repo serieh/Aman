@@ -8,11 +8,12 @@ from langchain_groq import ChatGroq
 
 load_dotenv()
 
-from .config import LLM_FAST_MODEL, LLM_CONTEXT_WINDOW, LLM_REPEAT_PENALTY, LLM_MAX_RETRIES, GROQ_MODEL_NAME
+from .config import LLM_FAST_MODEL, LLM_CONTEXT_WINDOW, LLM_REPEAT_PENALTY, LLM_MAX_RETRIES, GROQ_MODEL_NAME, GROQ_SECONDARY_MODEL_NAME
 from .prompts.summary import SUMMARY_PROMPT
 from .prompts.title import TITLE_PROMPT
 from .tools.rag.RAG import run_rag
 from logger import get_logger
+from langchain_core.runnables import RunnableLambda
 
 logger = get_logger(__name__)
 
@@ -28,12 +29,15 @@ def rag_search(query: str) -> str:
         return "No relevant passages found in the knowledge base. Please answer the user's question using your general therapeutic knowledge and do your best to respond."
     
     formatted = "\n\n---\n\n".join(passages)
-    return (
-        "Here is the retrieved knowledge based on your query:\n\n"
-        f"{formatted}\n\n"
-        "Please read and integrate this information where see fit into your final response to the user.\n"
-        "CRITICAL: If the user is in a RED crisis, you MUST NOT forget your instructions. Prioritize their physical safety directly and warmly. Always respond in the user's language."
-    )
+    return f"""<SYSTEM_DIRECTIVE_STRICT>
+توجيه صارم للنظام: 
+1. يجب أن تجيب باللغة العربية حصراً وبنفس لهجة شخصيتك.
+2. لا تبدأ إجابتك بأي ترحيب (مثل "أهلاً بك" أو "مرحباً").
+3. أجب مباشرة على سؤال المستخدم بناءً على هذه المعلومات فقط.
+</SYSTEM_DIRECTIVE_STRICT>
+
+[معلومات البحث المرجعية]
+{formatted}"""
 
 tools = [rag_search]
 
@@ -103,10 +107,12 @@ class LLMWrapper:
                 json_str = json_match.group(0)
                 data = json.loads(json_str)
                 if "content" in data:
+                    logger.debug(f"[LLMWrapper] Parsed JSON content: {data.get('content', '')}")
                     return ResponseFormat(content=data.get("content", ""))
         except json.JSONDecodeError:
             pass
             
+        logger.debug(f"[LLMWrapper] Fallback returning clean_text. Length: {len(clean_text)}")
         # Fallback: use the cleaned text as content directly
         return ResponseFormat(content=clean_text)
 
@@ -159,14 +165,39 @@ structured_llm_fast = LLMWrapper(fast_with_tools)
 
 groq_llm = ChatGroq(
     model_name=GROQ_MODEL_NAME,
-    max_retries=3,
+    max_retries=1,
+    max_tokens=1024,
+    api_key=os.getenv("GROQ_API_KEY", "missing_key")
+)
+
+groq_secondary_llm = ChatGroq(
+    model_name=GROQ_SECONDARY_MODEL_NAME,
+    max_retries=1,
     max_tokens=1024,
     api_key=os.getenv("GROQ_API_KEY", "missing_key")
 )
 
 # Bind tools to both models, then create the fallback runnable
-groq_with_tools = groq_llm.bind_tools(tools)
-llm_thinking_with_tools = groq_with_tools.with_fallbacks([fast_with_tools])
+def check_groq_output(response):
+    content = getattr(response, "content", "")
+    content_lower = content.lower()
+    if not content and not getattr(response, "tool_calls", None):
+        logger.warning("Groq returned empty response. Forcing fallback...")
+        raise ValueError("Empty response from Groq API (likely safety filter).")
+        
+    refusal_keywords = ["cannot fulfill", "unable to provide", "i apologize", "i'm sorry", "as an ai", "i cannot engage", "not able to"]
+    if any(k in content_lower for k in refusal_keywords):
+        logger.warning(f"Groq returned a canned refusal: {content}. Forcing fallback...")
+        raise ValueError("API Refusal detected.")
+        
+    return response
+
+groq_with_tools = groq_llm.bind_tools(tools) | RunnableLambda(check_groq_output)
+groq_secondary_with_tools = groq_secondary_llm.bind_tools(tools) | RunnableLambda(check_groq_output)
+
+fast_with_tools = llm_fast.bind_tools(tools)
+
+llm_thinking_with_tools = groq_with_tools.with_fallbacks([groq_secondary_with_tools, fast_with_tools])
 structured_llm_thinking = LLMWrapper(llm_thinking_with_tools)
 
 

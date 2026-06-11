@@ -12,6 +12,8 @@ This knowledge base contains professional mental health and psychology material
 sourced from textbooks, clinical guidelines, research papers, and web resources (both Arabic and English).
 
 WHEN TO USE THE RAG TOOL:
+- MANDATORY: You MUST use the `rag_search` tool when the user asks for factual information, definitions, locations, symptoms, side effects, therapeutic techniques, or phone numbers.
+- DO NOT rely on your internal knowledge for facts. Always search the knowledge base.
 - The user asks about a specific condition, therapeutic technique, or coping strategy.
 - The user needs psychoeducation (e.g., "what is anxiety?", "how does CBT work?").
 - You need clinical grounding to give an accurate, safe response.

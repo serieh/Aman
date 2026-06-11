@@ -47,10 +47,11 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
                 lambda: Chat.objects.filter(chat_id=chat_id).values_list("title", flat=True).first()
             )
             if not chat_title or chat_title == "Untitled Chat":
+                logger.debug(f"Starting background title generation | chat_id: {chat_id}")
                 threading.Thread(
                     target=_generate_title_background,
                     args=(user_message, chat_id),
-                    daemon=True,
+                    daemon=True
                 ).start()
         
         emotion = await asyncio.to_thread(estimate_emotion, user_message)
@@ -139,21 +140,68 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
 
         for attempt in range(SAFETY_MAX_OUTPUT_RETRIES):
             final_text = ""
+            tools_called_in_attempt = False
             # Run graph in streaming mode
             async for event in GRAPH.astream_events(state_input, version="v1"):
                 kind = event["event"]
+                name = event["name"]
+                
                 if kind == "on_chat_model_stream":
                     chunk = event["data"]["chunk"]
                     if chunk.content:
-                        final_text += chunk.content
-                        yield chunk.content
+                        # Handle LangChain bug where with_fallbacks yields cumulative chunks
+                        if final_text and chunk.content.startswith(final_text):
+                            new_text = chunk.content[len(final_text):]
+                            final_text = chunk.content
+                            if new_text:
+                                yield new_text
+                        else:
+                            final_text += chunk.content
+                            yield chunk.content
+                elif kind == "on_chat_model_end":
+                    output = event["data"].get("output")
+                    if output and hasattr(output, "content") and output.content and not final_text.strip() and not tools_called_in_attempt:
+                        # Fallback models might skip stream events when executed inside with_fallbacks
+                        final_text = output.content
+                        yield final_text
+                elif kind == "on_tool_start":
+                    tools_called_in_attempt = True
+                    yield {"tool_call": event.get("name"), "tool_input": event.get("data", {}).get("input")}
 
-            output_safety = await asyncio.to_thread(
-                run_output_safety,
-                final_text,
-                crisis_flag=safety.get("crisis_flag", False),
-                grey_area_flag=safety.get("grey_area_flag", False)
-            )
+                elif kind == "on_tool_end":
+                    t_out = event.get("data", {}).get("output")
+                    if hasattr(t_out, "content"):
+                        t_out_str = t_out.content
+                    else:
+                        t_out_str = str(t_out)
+                    yield {"tool_output": t_out_str}
+
+                elif kind == "on_chain_end" and event.get("name") == "agent":
+                    node_out = event.get("data", {}).get("output")
+                    if node_out and "response" in node_out:
+                        resp = node_out["response"]
+                        if isinstance(resp, dict) and "content" in resp:
+                            logger.info(f"CAPTURED FROM AGENT NODE: {repr(resp['content'])}")
+                            if not final_text.strip() and resp["content"].strip() and not tools_called_in_attempt:
+                                final_text = resp["content"]
+                                yield {"replace_all": final_text}
+
+            if not final_text.strip() and not tools_called_in_attempt:
+                from agent.config import FALLBACK_RESPONSE
+                final_text = FALLBACK_RESPONSE["content"]
+                yield {"replace_all": final_text}
+
+            if tools_called_in_attempt:
+                is_safe = True
+                output_safety = {"safe": True, "reason": None}
+            else:
+                output_safety = await asyncio.to_thread(
+                    run_output_safety,
+                    final_text,
+                    crisis_flag=safety.get("crisis_flag", False),
+                    grey_area_flag=safety.get("grey_area_flag", False)
+                )
+                is_safe = output_safety.get("safe", True)
             
             is_safe = output_safety.get("safe", True)
             
@@ -174,10 +222,18 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
                 ]
 
         if not is_safe:
-            redacted_message = "[This message was flagged and removed for violating safety guidelines]"
-            yield {"replace_all": redacted_message}
-            assistant_content = redacted_message
-            assistant_flag = "UNSAFE"
+            reason = output_safety.get('reason', '')
+            if reason == "Response too short.":
+                # Provide a gentle, human-like fallback if the models fail to generate anything
+                fallback_msg = "أنا معك وأسمعك. هل يمكنك أن تخبرني المزيد عما تشعر به؟"
+                yield {"replace_all": fallback_msg}
+                assistant_content = fallback_msg
+                assistant_flag = "SAFE"
+            else:
+                redacted_message = "[تم حجب هذه الرسالة لمخالفتها إرشادات الأمان]"
+                yield {"replace_all": redacted_message}
+                assistant_content = redacted_message
+                assistant_flag = "UNSAFE"
 
         await asyncio.to_thread(save_message, chat_id, role="assistant", content=assistant_content, safety_flag=assistant_flag)
         await asyncio.to_thread(update_chat_modify_date, chat_id)

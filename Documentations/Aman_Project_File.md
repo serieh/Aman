@@ -162,9 +162,11 @@ Both models are configured with:
 - `keep_alive: -1` (or `0` for thinking) — memory persistence 
 - `repeat_penalty: 1.15` — reduce repetition
 
-Structured output is handled differently depending on the tier:
+Structured output and tool binding is handled differently depending on the tier:
 - **Tier 2 (Fast Model)**: Enforces JSON strictly via `.with_structured_output(ResponseFormat)`.
 - **Tier 1 (Thinking Model)**: Uses a custom `ThinkingLLMWrapper` instead of structured output. This allows the model to freely generate its `<think>...</think>` block without JSON formatting crashes, after which the text is parsed into the `ResponseFormat` object.
+
+Both models are wrapped using `.bind_tools()` (for RAG) and utilize LangChain's `.with_fallbacks()` mechanism. If the primary API (Groq) refuses a sensitive prompt or times out, the system automatically falls back to the local `gemma4:e2b` to ensure continuous service without exposing errors to the user.
 
 > May change to another model in the future or do finetuning
 
@@ -259,9 +261,11 @@ The thread safely updates the chat record in the database using Django ORM and c
 
 ### 9.1 Architecture
 
-RAG is implemented as a **LangGraph tool** registered in `agent/tools/rag.py`. The agent calls it autonomously when it determines that factual knowledge is needed to ground a response. LangGraph handles tool invocation and result injection natively — retrieved passages return as a `ToolMessage` in the conversation before the agent generates its final reply. `runner.py` does not need to manage RAG directly.
+RAG is implemented as a **LangGraph tool** registered in `agent/tools/rag.py`. The agent calls it autonomously when it determines that factual knowledge is needed to ground a response. LangGraph handles tool invocation and result injection natively — retrieved passages return as a `ToolMessage` in the conversation before the agent generates its final reply. 
 
-The tool is bound to the LLM in `agent/graph.py`. Guidance on when and how to use it is provided in `agent/prompts/tools.py`.
+To prevent "hallucination by language crossover", the tool prompt strictly enforces that all retrieved English documents are implicitly translated to Arabic before the final response is formulated. `runner.py` manages RAG output explicitly by parsing `ToolMessage` objects to prevent JSON serialization WebSocket crashes.
+
+The tool is bound to the LLM in `agent/graph.py` using `.bind_tools()`. Guidance on when and how to use it is provided in `agent/prompts/tools.py`.
 
 ```python
 # agent/tools/rag.py
@@ -389,21 +393,21 @@ Keyword substring match + Arabic/English regex patterns against `GREY_AREA_KEYWO
 
 After `GRAPH.invoke()`, `validate_response(response.content)` scans the reply text before delivery. Receives `response.content` (string) from the `ResponseFormat` object — not the whole object.
 
-**Six blocked categories:**
+**Four blocked categories:**
 
 | Category | Examples |
 |---|---|
 | Harmful advice | "kill yourself", "hurt yourself" |
-| Medical diagnosis | "You have depression", "عندك إكتئاب" |
+| Medical diagnosis (Definitive) | "You have depression", "عندك إكتئاب" (Note: Disclaimers like "I cannot diagnose you" are permitted) |
 | Medication advice | "stop your medication" |
-| Refusal patterns | "I can't discuss this" |
-| Hotlines / emergency numbers | 911, 988, "call the hotline" |
-| Routing scripts (non-crisis) | "your life has value", "find someone nearby" |
+| Unverified numbers | 911, 988 |
+
+*Note: The safety rules have been relaxed to allow Aman to discuss psychological terminology and offer relevant hotlines without aggressively blocking empathetic dialogue.*
 
 **Streaming Validation & Repair flow:** The agent streams its response via WebSockets in real-time. After the stream completes, `validate_response()` scans the accumulated reply text. 
 - If validation fails, a `{"type": "clear"}` signal is dispatched over the WebSocket to erase the unsafe message from the user's UI.
 - The system automatically triggers a repair loop, appending the flagged output and asking the LLM to correct itself, up to `SAFETY_MAX_OUTPUT_RETRIES` (3 times).
-- If all retries fail, a hardcoded fallback (`FALLBACK_RESPONSE`) is sent instead.
+- **Human Fallback:** If all retries fail, or the models return an empty string (e.g. Groq refusal + Ollama timeout), an empathetic, human-like fallback ("أنا معك وأسمعك. هل يمكنك أن تخبرني المزيد عما تشعر به؟") is seamlessly yielded to prevent empty text bubbles or robotic error messages.
 - Unsafe outputs are flagged in the database (`safety_flag="UNSAFE_OUTPUT"`) and excluded from future context loops to protect the agent's memory from its own mistakes.
 
 ### 10.5 Safety Flag → DB Mapping

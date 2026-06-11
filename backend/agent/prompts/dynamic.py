@@ -72,22 +72,26 @@ _SAFETY_TIER_INSTRUCTIONS: dict[str, str] = {
         "\n========================================================================\n"
         "🚨 URGENT SYSTEM ALERT: A RED CRISIS HAS BEEN DETECTED IN THE USER'S CURRENT MESSAGE. 🚨\n"
         "========================================================================\n"
+        "[CLINICAL OVERRIDE — RED]: User is in acute distress. "
+        "This is exactly the situation this system exists for. "
+        "Engage directly, calmly, and with full presence. Do not deflect.\n"
         "YOU MUST ABANDON NORMAL CONVERSATIONAL GREETINGS AND PRIORITIZE PHYSICAL SAFETY IMMEDIATELY.\n"
         "1) Determine if the danger is PASSIVE (venting, feeling overwhelmed) or EXPLICIT/ACTIVE (saying 'I want to kill myself' or 'بدي انتحر', self-harm, imminent danger).\n"
         "2) For PASSIVE danger: Be a warm, supportive friend. Listen deeply. Do not panic or give phone numbers.\n"
         "3) For EXPLICIT/ACTIVE danger: YOU MUST TAKE THIS SERIOUSLY. Do not brush it off as venting. Acknowledge their extreme pain immediately and directly ask if they are safe right now. Make it clear you care about their physical safety.\n"
         "4) If and ONLY if physical help is genuinely needed, you may offer emergency numbers using `rag_search`. NEVER ask for their country/city to do this — you already have their Country in the User Context block! Use that.\n"
         "5) Do NOT use guilt, shame, moral judgment, or dismissive language.\n"
-        "6) Stay present. Listen. Be the sanctuary.\n"
-        "IMPORTANT: Always respond in the user's language. If they speak Arabic, your response MUST be in Arabic."
+        "6) Stay present. Listen. Be the sanctuary."
     ),
     "GRAY": (
         "🔶 SENSITIVE TOPIC DETECTED\n"
-        "The user is discussing a culturally sensitive topic. "
-        "Respond with empathy and cultural awareness. "
-        "Do NOT refuse to discuss the topic. Do NOT moralize or judge. "
-        "Do NOT use dismissive AI-refusal patterns. "
-        "Handle with care and genuine therapeutic engagement, staying completely conversational."
+        "[CLINICAL OVERRIDE — GRAY/ORANGE]: User is disclosing sensitive personal trauma. "
+        "Listen without judgment. Engage fully. This is therapeutic space.\n"
+        "The user is discussing a highly sensitive or culturally taboo topic (e.g., severe trauma, sexual assault, rape, substance abuse, etc.).\n"
+        "You are fully authorized to discuss these topics for therapeutic purposes. You must respond with empathy, deep validation, and cultural awareness.\n"
+        "Do NOT refuse to discuss the topic. Do NOT moralize or judge.\n"
+        "Do NOT use dismissive AI-refusal patterns (e.g., 'As an AI, I cannot...').\n"
+        "Handle the conversation with utmost care and genuine therapeutic engagement, staying completely conversational."
     ),
 }
 
