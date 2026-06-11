@@ -21,6 +21,7 @@ GROQ_SECONDARY_MODEL_NAME = "llama-3.3-70b-versatile" # 3-tier fallback
 LLM_CONTEXT_WINDOW = 4096   # 8192
 LLM_REPEAT_PENALTY = 1.15
 LLM_MAX_RETRIES = 3
+DYNAMIC_CONTEXT_WINDOW = True
 
 # ── Memory ───────────────────────────────────────────────────────────
 MAX_MESSAGES_BEFORE_SUMMARY = 25
@@ -55,6 +56,7 @@ EMBEDDINGS_MODEL = "BAAI/bge-m3"
 EMBEDDINGS_VECTOR_SIZE = 1024
 EMBEDDINGS_DEVICE = "cuda" # "cpu" or "cuda"
 TOP_K_RESULTS = 3
+EMBEDDING_CACHE_SIZE = 5000
 
 from pathlib import Path
 

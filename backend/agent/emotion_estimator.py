@@ -1,4 +1,5 @@
 import torch, textwrap
+import functools
 from collections import defaultdict
 from transformers import pipeline
 
@@ -27,6 +28,7 @@ _relevant_set = set(EMOTION_RELEVANT_LABELS)
 
 
 
+@functools.lru_cache(maxsize=1000)
 def estimate_emotion(text: str) -> dict:
     """
     Run the pretrained emotion classifier on the given text.

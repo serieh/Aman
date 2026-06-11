@@ -5,44 +5,32 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 
 export default function InputBar({ chatId }) {
-  const { inputMessage, setInputMessage, triggerSend, setTriggerSend, addMessage, model, setModel, messages, setMessages, chats, setChats, setCurrentChat, setGeneratingTitleChatId, updateChatTitle, voiceMode, setVoiceMode } = useChatStore();
+  const { inputMessage, setInputMessage, triggerSend, setTriggerSend, addMessage, model, setModel, messages, setMessages, chats, setChats, setCurrentChat, setGeneratingTitleChatId, updateChatTitle } = useChatStore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [abortController, setAbortController] = useState(null);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
-  
   const navigate = useNavigate();
   const formRef = useRef(null);
   const modelRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Auto-focus input on mount and when chatId changes
-  useEffect(() => {
-    if (inputRef.current && !isGenerating) {
-      inputRef.current.focus();
-    }
-  }, [chatId, isGenerating]);
 
-  // Close model menu on outside click
   useEffect(() => {
-    function handleClickOutside(event) {
+    const handleClickOutside = (event) => {
       if (modelRef.current && !modelRef.current.contains(event.target)) {
         setModelMenuOpen(false);
       }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    if (triggerSend && inputMessage && !isGenerating) {
-      setTriggerSend(false);
-      if (formRef.current) {
-        formRef.current.requestSubmit();
-      }
-    } else if (triggerSend) {
-      setTriggerSend(false);
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (formRef.current) formRef.current.requestSubmit();
     }
-  }, [triggerSend, inputMessage, isGenerating, setTriggerSend]);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,7 +41,6 @@ export default function InputBar({ chatId }) {
     
     let activeChatId = chatId;
     
-    // OPTIMISTIC UI: Instantly navigate and show user message
     if (!activeChatId || activeChatId === 'temp') {
       activeChatId = 'temp';
       navigate(`/app/chat/temp`);
@@ -67,7 +54,6 @@ export default function InputBar({ chatId }) {
     setAbortController(controller);
 
     try {
-      // If we are in 'temp' state, create the chat in the backend
       if (activeChatId === 'temp') {
         const { data } = await api.post('/chats/');
         activeChatId = data.chat_id;
@@ -77,7 +63,6 @@ export default function InputBar({ chatId }) {
         navigate(`/app/chat/${activeChatId}`, { replace: true });
       }
 
-      // Create a temporary AI message for streaming
       const aiMsgId = (Date.now() + 1).toString();
       addMessage({ role: 'assistant', content: '', message_id: aiMsgId, isGenerating: true, timeToFirstToken: null });
 
@@ -85,13 +70,11 @@ export default function InputBar({ chatId }) {
       let firstTokenReceived = false;
 
       const token = localStorage.getItem('access');
-      
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${wsProtocol}//${window.location.host}/ws/chat/${activeChatId}/?token=${token}`;
       
       const ws = new WebSocket(wsUrl);
       
-      // Keep track of connection
       setAbortController({ abort: () => {
         if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
           ws.close();
@@ -105,7 +88,7 @@ export default function InputBar({ chatId }) {
         ws.send(JSON.stringify({
           message: messageToSend,
           model_preference: model,
-          mode: voiceMode ? "voice" : "normal",
+          mode: "normal",
         }));
       };
 
@@ -113,7 +96,6 @@ export default function InputBar({ chatId }) {
         const data = JSON.parse(event.data);
         
         if (data.error) {
-          console.error("WebSocket error:", data.error);
           ws.close();
           const currentMessages = useChatStore.getState().messages;
           setMessages(currentMessages.map(m =>
@@ -141,7 +123,7 @@ export default function InputBar({ chatId }) {
           ));
           return;
         }
-        
+
         if (data.chunk) {
           fullContent += data.chunk;
           if (!firstTokenReceived && fullContent.trim().length > 0) {
@@ -155,12 +137,10 @@ export default function InputBar({ chatId }) {
         
         if (data.done) {
           ws.close();
-          // Final update
           setMessages(useChatStore.getState().messages.map(m => 
             m.message_id === aiMsgId ? { ...m, content: fullContent, isGenerating: false } : m
           ));
 
-          // Fetch updated chat title after response completes
           const currentGeneratingId = useChatStore.getState().generatingTitleChatId;
           if (currentGeneratingId === activeChatId) {
             const pollTitle = async (retries = 6, delay = 2000) => {
@@ -188,7 +168,6 @@ export default function InputBar({ chatId }) {
       };
 
       ws.onerror = (err) => {
-        console.error("WebSocket connection failed", err);
         const currentMessages = useChatStore.getState().messages;
         setMessages(currentMessages.map(m =>
           m.message_id === aiMsgId ? { ...m, content: 'Sorry, connection failed. Please try again.', isGenerating: false } : m
@@ -198,7 +177,6 @@ export default function InputBar({ chatId }) {
       };
 
       ws.onclose = () => {
-        // Fallback in case it closes without done signal or error handled
         if (useChatStore.getState().messages.find(m => m.message_id === aiMsgId)?.isGenerating) {
             setMessages(useChatStore.getState().messages.map(m => 
                 m.message_id === aiMsgId ? { ...m, isGenerating: false } : m
@@ -209,7 +187,6 @@ export default function InputBar({ chatId }) {
       };
 
     } catch (err) {
-      console.error("Stream initialization failed", err);
       setIsGenerating(false);
       setAbortController(null);
     }
@@ -218,13 +195,6 @@ export default function InputBar({ chatId }) {
   const handleStop = () => {
     if (abortController) {
       abortController.abort();
-    }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      if (formRef.current) formRef.current.requestSubmit();
     }
   };
 
@@ -295,18 +265,6 @@ export default function InputBar({ chatId }) {
             </div>
           )}
         </div>
-
-        {/* Voice Mode Toggle */}
-        <button
-          type="button"
-          onClick={() => setVoiceMode(!voiceMode)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${voiceMode ? 'bg-aman-primary/10 text-aman-primary' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-          title={voiceMode ? "Voice Mode Active" : "Normal Text Mode"}
-        >
-          {voiceMode ? <Mic size={14} className="animate-pulse" /> : <MicOff size={14} />}
-          {voiceMode ? "Voice" : "Text"}
-        </button>
-
       </div>
     </div>
   );

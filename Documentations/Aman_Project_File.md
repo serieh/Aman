@@ -621,5 +621,11 @@ All routes mapped in Django apps are detailed in `URL_API_Mapping.md`. Note that
 - **Tool-Induced Amnesia Fix:** Appended a strict post-tool safety reminder to the `rag_search` output to prevent the LLM from dropping its persona and emergency context after retrieving hotline numbers.
 - **Crisis Response Precision:** Reworked the RED tier safety prompt to distinguish between **PASSIVE** danger (venting) and **EXPLICIT/ACTIVE** danger (explicit self-harm threats). Aman now behaves naturally for passive venting and shifts to a focused, active safety protocol only when strictly necessary.
 - **Language Lock:** Implemented explicit overriding rules in the safety prompt requiring the agent to always use the user's language during crises, preventing unwanted reversions to English.
-- **Voice Mode Foundation:** Added a voice mode toggle in the frontend `InputBar.jsx` and updated the `useChatStore` and websocket consumers to accept and propagate the `mode` parameter.
 - **Prompt Architecture:** Removed contradictory persona instructions ("not a crisis counselor") from `core.py` to ensure the RED crisis overrides take precedence.
+
+### v6.3 - Persona Fine-Tuning & UI Cleanup (June 2026)
+- **UI Restoration:** Completely removed the experimental Voice Mode toggle and animated Avatar from the frontend, restoring the pure, text-first ChatGPT-style interface requested by user testing.
+- **State Management Fix:** Resolved a bug in `useChatStore` where deleting the currently active chat failed to redirect the user to a blank slate, causing ghost-state rendering issues.
+- **Implicit Empathy Tuning:** Overhauled `core.py` and `dynamic.py` to instruct the LLM to use *implicit* empathy rather than explicit, repetitive validation phrases (e.g., banning phrases like "I hear you", "I understand your pain").
+- **Pink Elephant Purge:** Rewrote few-shot safety examples in `safety.py` to eliminate hardcoded cliché phrases that the LLM was improperly memorizing.
+- **Punctuation Filtering:** Purged the em dash (`—`) symbol completely from the backend's internal prompt directory and strictly forbade its use in output formatting to prevent stylistic bleeding from the system instructions into the conversational UI.

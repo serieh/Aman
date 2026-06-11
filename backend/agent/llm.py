@@ -166,15 +166,15 @@ structured_llm_fast = LLMWrapper(fast_with_tools)
 groq_llm = ChatGroq(
     model_name=GROQ_MODEL_NAME,
     max_retries=1,
-    max_tokens=1024,
-    api_key=os.getenv("GROQ_API_KEY", "missing_key")
+    max_tokens=2048,
+    api_key=os.getenv("GROQ_API_KEY", "")
 )
 
 groq_secondary_llm = ChatGroq(
     model_name=GROQ_SECONDARY_MODEL_NAME,
     max_retries=1,
-    max_tokens=1024,
-    api_key=os.getenv("GROQ_API_KEY", "missing_key")
+    max_tokens=2048,
+    api_key=os.getenv("GROQ_API_KEY", "")
 )
 
 # Bind tools to both models, then create the fallback runnable
@@ -185,17 +185,37 @@ def check_groq_output(response):
         logger.warning("Groq returned empty response. Forcing fallback...")
         raise ValueError("Empty response from Groq API (likely safety filter).")
         
-    refusal_keywords = ["cannot fulfill", "unable to provide", "i apologize", "i'm sorry", "as an ai", "i cannot engage", "not able to"]
-    if any(k in content_lower for k in refusal_keywords):
-        logger.warning(f"Groq returned a canned refusal: {content}. Forcing fallback...")
-        raise ValueError("API Refusal detected.")
-        
+    hard_refusal_patterns = [
+        "cannot fulfill", "unable to provide", "i apologize, but i cannot", 
+        "i must decline", "i cannot engage", "i am not able to", 
+        "it would be inappropriate", "i must refrain",
+        "لا أستطيع", "لا يمكنني", "أعتذر، لا يمكنني", "أنا غير قادر على"
+    ]
+    
+    # Soft disclaimers that we can just strip out
+    soft_disclaimers = [
+        "As an AI language model, ",
+        "I want to be transparent that I am an AI. ",
+        "Please note that I am an AI and not a medical professional. "
+    ]
+    
+    if any(p in content_lower for p in hard_refusal_patterns):
+        # If it's a short response, it's a hard refusal
+        if len(content.split()) < 40:
+            logger.warning(f"Groq returned a hard refusal: {content}. Forcing fallback...")
+            raise ValueError("API Refusal detected.")
+            
+    # Strip soft disclaimers
+    clean_content = content
+    for disclaimer in soft_disclaimers:
+        if clean_content.startswith(disclaimer):
+            clean_content = clean_content[len(disclaimer):].strip()
+            
+    response.content = clean_content
     return response
 
 groq_with_tools = groq_llm.bind_tools(tools) | RunnableLambda(check_groq_output)
 groq_secondary_with_tools = groq_secondary_llm.bind_tools(tools) | RunnableLambda(check_groq_output)
-
-fast_with_tools = llm_fast.bind_tools(tools)
 
 llm_thinking_with_tools = groq_with_tools.with_fallbacks([groq_secondary_with_tools, fast_with_tools])
 structured_llm_thinking = LLMWrapper(llm_thinking_with_tools)

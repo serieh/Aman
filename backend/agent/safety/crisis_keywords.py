@@ -8,7 +8,7 @@ from agent.config import CRISIS_KEYWORDS
 
 # Arabic dialect verb/noun forms missed by exact keyword lists (e.g. انتحر vs انتحار)
 CRISIS_PATTERNS = [
-    re.compile(r"انتح[ار]", re.I),  # انتحر، انتحار، انتحرت
+    re.compile(r"انتح(?:ار|ر)", re.I),  # انتحر، انتحار، انتحرت
     re.compile(r"نفسي\s*انتح", re.I),
     re.compile(r"بد[iyee]\s*انتح", re.I),
     re.compile(r"بده\s*انتح", re.I),

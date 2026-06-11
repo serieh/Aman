@@ -1,16 +1,13 @@
 import uuid, asyncio, os
-from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, FilterSelector, Filter, FieldCondition, MatchValue
 from agent.config import QDRANT_USER_COLLECTION, EMBEDDINGS_VECTOR_SIZE
 from agent.llm import llm_fast
 from langchain_core.messages import HumanMessage
 from agent.tools.rag.embeddings import get_embedding_model
+from agent.qdrant_connection import get_shared_qdrant_client
 
 def get_qdrant_client():
-    host = os.getenv("QDRANT_HOST", "localhost")
-    port = int(os.getenv("QDRANT_PORT", "6333"))
-    return QdrantClient(host=host, port=port)
-
+    return get_shared_qdrant_client()
 
 def ensure_user_collection(client, vector_size=EMBEDDINGS_VECTOR_SIZE):
     if not client.collection_exists(QDRANT_USER_COLLECTION):

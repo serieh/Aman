@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
+from agent.qdrant_connection import get_shared_qdrant_client
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
 from pathlib import Path
@@ -96,7 +97,7 @@ def ingest_sources_to_qdrant(
     embedding_model = get_embedding_model()
     vector_size = _resolve_vector_size(embedding_model)
 
-    client = QdrantClient(QDRANT_HOST, port=QDRANT_PORT)
+    client = get_shared_qdrant_client()
     if recreate:
         client.recreate_collection(
             collection_name=collection_name,

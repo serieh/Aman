@@ -121,19 +121,25 @@ class MessageView(APIView):
             f"| user_id: {user_id} | model: {model_preference} | mode: {mode}"
         )
 
+        import json
         from django.http import StreamingHttpResponse
-        try:
-            generator = run_agent(
-                user_id=user_id,
-                chat_id=chat_id_str,
-                user_message=user_message,
-                model_preference=model_preference,
-                mode=mode,
-            )
-            return StreamingHttpResponse(generator, content_type='text/plain')
-        except Exception as e:
-            logger.error(f"Agent call failed | chat_id: {chat_id_str} | error: {e}")
-            return Response(
-                {"error": "Something went wrong processing your message."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+        
+        async def stream_generator():
+            try:
+                async for payload in run_agent(
+                    user_id=user_id,
+                    chat_id=chat_id_str,
+                    user_message=user_message,
+                    model_preference=model_preference,
+                    mode=mode,
+                ):
+                    if isinstance(payload, dict):
+                        yield json.dumps(payload) + "\n"
+                    else:
+                        yield json.dumps({"chunk": payload}) + "\n"
+                yield json.dumps({"done": True}) + "\n"
+            except Exception as e:
+                logger.error(f"Agent stream failed | error: {e}")
+                yield json.dumps({"error": "Stream failed"}) + "\n"
+
+        return StreamingHttpResponse(stream_generator(), content_type='application/x-ndjson')

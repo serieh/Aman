@@ -12,7 +12,7 @@ frontend:
 
 backend:
 	@echo "Starting Backend..."
-	cd backend && uv sync && uv run python manage.py migrate && uv run python manage.py runserver
+	cd backend && uv sync && uv run python manage.py migrate && uv run daphne -b 127.0.0.1 -p 8000 core.asgi:application
 
 ollama:
 	@echo "Starting Ollama..."

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, useParams } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import InputBar from '../components/InputBar';
 import SettingsModal from '../components/SettingsModal';
@@ -9,7 +9,8 @@ import { useAuthStore } from '../store/useAuthStore';
 export default function AppLayout() {
   const [showSettings, setShowSettings] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { chatId } = useParams();
+  const location = useLocation();
+  const chatId = location.pathname.split('/chat/')[1] || null;
   const user = useAuthStore(state => state.user);
   const fetchUser = useAuthStore(state => state.fetchUser);
 

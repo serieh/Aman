@@ -2,21 +2,16 @@
 from __future__ import annotations
 import os
 from typing import Any
-from qdrant_client import QdrantClient
+from agent.qdrant_connection import get_shared_qdrant_client
 from ...config import QDRANT_COLLECTION, TOP_K_RESULTS
 from . import embeddings
 
-_QDRANT_CLIENT: QdrantClient | None = None
+_QDRANT_CLIENT: Any | None = None
 _EMBEDDING_MODEL: Any | None = None
-QDRANT_HOST = os.getenv("QDRANT_HOST")
-QDRANT_PORT = os.getenv("QDRANT_PORT")
 
 
-def _get_client() -> QdrantClient:
-    global _QDRANT_CLIENT
-    if _QDRANT_CLIENT is None:
-        _QDRANT_CLIENT = QdrantClient(QDRANT_HOST, port=QDRANT_PORT)
-    return _QDRANT_CLIENT
+def _get_client():
+    return get_shared_qdrant_client()
 
 
 def _get_embedding_model() -> Any:

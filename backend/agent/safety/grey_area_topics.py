@@ -6,6 +6,7 @@ Suicide / self-harm → crisis only (see CRISIS_KEYWORDS in core.config) — nev
 Both flags may be true when a message mixes crisis language with other sensitive topics.
 """
 from __future__ import annotations
+import re
 
 # ─── Crisis-only (documented; not used for grey matching) ─────────────────────
 CRISIS_ONLY_TOPICS = {
@@ -337,7 +338,15 @@ def match_grey_categories(text: str) -> list[str]:
     matched: list[str] = []
     for cat_id, meta in GREY_AREA_CATEGORIES.items():
         for kw in meta["keywords"]:
-            if kw.lower() in lowered:
-                matched.append(cat_id)
-                break
+            kw_lower = kw.lower()
+            # If it's pure English (letters/spaces), enforce word boundaries to avoid false positives
+            if re.match(r'^[a-z\s\-]+$', kw_lower):
+                pattern = r'\b' + re.escape(kw_lower) + r'\b'
+                if re.search(pattern, lowered):
+                    matched.append(cat_id)
+                    break
+            else:
+                if kw_lower in lowered:
+                    matched.append(cat_id)
+                    break
     return matched

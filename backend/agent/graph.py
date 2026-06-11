@@ -14,10 +14,8 @@ class AgentState(TypedDict):
     messages: Annotated[Sequence, operator.add]
     user_id: str
     chat_id: str
-    emotion_context: dict | None   
     response: dict | None
     model_preference: str
-    safety_context: dict | None
     
 
 
@@ -56,6 +54,12 @@ def should_use_tools(state: AgentState) -> str:
     Edge condition: did the LLM ask to call a tool?
     Returns "tools" → ToolNode, or "end" → done.
     """
+    # Count tool calls to prevent infinite loops
+    tool_calls_count = sum(1 for m in state["messages"] if getattr(m, "tool_calls", None))
+    if tool_calls_count >= 3:
+        logger.warning(f"Max tool iterations reached ({tool_calls_count}). Forcing end.")
+        return "end"
+
     last = state["messages"][-1]
     if getattr(last, "tool_calls", None):
         return "tools"

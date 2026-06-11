@@ -38,9 +38,25 @@ class ChatConsumer(AsyncWebsocketConsumer):
         model_preference = data.get("model_preference", "2")
         mode = data.get("mode", "normal")
 
-        if not message:
-            await self.send(text_data=json.dumps({"error": "Empty message"}))
-            return
+        audio_input = data.get("audio_input")
+        
+        if audio_input:
+            try:
+                from agent.voice.stt import transcribe_audio
+                message = await transcribe_audio(audio_input)
+                if not message:
+                    await self.send(text_data=json.dumps({"error": "Could not hear any speech. Please try again."}))
+                    return
+                # Tell the client what they said so it shows in the UI
+                await self.send(text_data=json.dumps({"user_message_echo": message}))
+            except Exception as e:
+                logger.error(f"STT Error: {e}")
+                await self.send(text_data=json.dumps({"error": "Speech to text transcription failed."}))
+                return
+        else:
+            if not message:
+                await self.send(text_data=json.dumps({"error": "Empty message"}))
+                return
 
         try:
             # Yield chunks or signals back to client

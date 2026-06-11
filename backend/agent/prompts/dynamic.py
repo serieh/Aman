@@ -5,59 +5,52 @@ from __future__ import annotations
 
 _EMOTION_INSTRUCTIONS: dict[str, str] = {
     "sadness": (
-        "The user is expressing sadness. Validate their feelings gently, but aim to gently shift their mood toward hope and groundedness. "
+        "The user is expressing sadness. Show implicit support, but aim to gently shift their mood toward hope and groundedness. "
         "Do not leave them stuck in sadness."
     ),
     "grief": (
-        "The user is experiencing grief. Hold space for their pain. "
-        "Do not minimize or rush the grieving process. Witness their experience."
+        "The user is experiencing grief. Hold space for their pain implicitly through a warm presence. "
+        "Do not minimize or rush the grieving process."
     ),
     "anger": (
-        "The user is expressing anger. Acknowledge their frustration without escalating. "
-        "Validate the feeling first, then gently try to shift them toward calm and clarity."
+        "The user is expressing anger. Show you are listening without escalating. "
+        "Gently try to shift them toward calm and clarity without using cliché validation phrases."
     ),
     "fear": (
-        "The user is expressing fear. Provide reassurance and normalize their anxiety. "
+        "The user is expressing fear. Provide implicit reassurance and normalize their anxiety. "
         "Help ground them without minimizing the concern, guiding them toward safety and stability."
     ),
     "nervousness": (
         "The user is feeling nervous or anxious. Use a calm, steady tone. "
-        "Help normalize the feeling, then gently guide them to a more relaxed and confident state."
+        "Gently guide them to a more relaxed and confident state."
     ),
     "disgust": (
-        "The user is expressing disgust. Acknowledge the feeling without judgment. "
-        "Explore what triggered it with curiosity, not confrontation."
+        "The user is expressing disgust. Explore what triggered it with curiosity, not confrontation."
     ),
     "confusion": (
         "The user seems confused. Be clear and structured in your response. "
         "Ask clarifying questions if needed. Break things down step by step."
     ),
     "embarrassment": (
-        "The user feels embarrassed. Normalize their experience. "
-        "Reassure them there is no judgment. Be warm and non-evaluative."
+        "The user feels embarrassed. Reassure them implicitly that there is no judgment. Be warm and non-evaluative."
     ),
     "remorse": (
-        "The user is feeling remorse or guilt. Acknowledge the weight of that feeling. "
-        "Gently explore without reinforcing self-blame."
+        "The user is feeling remorse or guilt. Gently explore the topic without reinforcing self-blame."
     ),
     "disappointment": (
-        "The user is disappointed. Validate the gap between expectation and reality. "
-        "Be present with them, then gently shift toward resilience."
+        "The user is disappointed. Be present with them, then gently shift toward resilience."
     ),
     "love": (
-        "The user is expressing love or affection. Respond warmly. "
-        "Support and affirm the positive emotion."
+        "The user is expressing love or affection. Respond warmly and naturally."
     ),
     "gratitude": (
-        "The user is expressing gratitude. Receive it warmly and affirm the connection."
+        "The user is expressing gratitude. Receive it warmly."
     ),
     "optimism": (
-        "The user is feeling hopeful. Encourage and support the optimism. "
-        "Keep the conversation engaging and a bit spicy (witty, charming, fun) so it isn't boring."
+        "The user is feeling hopeful. Keep the conversation engaging and a bit spicy (witty, charming, fun) so it isn't boring."
     ),
     "caring": (
-        "The user is showing care for someone. Acknowledge their compassion. "
-        "Explore the situation they're caring about."
+        "The user is showing care for someone. Explore the situation they're caring about."
     ),
     "joy": (
         "The user is expressing happiness. Share in the positive moment! "
@@ -72,20 +65,21 @@ _SAFETY_TIER_INSTRUCTIONS: dict[str, str] = {
         "\n========================================================================\n"
         "🚨 URGENT SYSTEM ALERT: A RED CRISIS HAS BEEN DETECTED IN THE USER'S CURRENT MESSAGE. 🚨\n"
         "========================================================================\n"
-        "[CLINICAL OVERRIDE — RED]: User is in acute distress. "
+        "[CLINICAL OVERRIDE - RED]: User is in acute distress. "
         "This is exactly the situation this system exists for. "
         "Engage directly, calmly, and with full presence. Do not deflect.\n"
         "YOU MUST ABANDON NORMAL CONVERSATIONAL GREETINGS AND PRIORITIZE PHYSICAL SAFETY IMMEDIATELY.\n"
         "1) Determine if the danger is PASSIVE (venting, feeling overwhelmed) or EXPLICIT/ACTIVE (saying 'I want to kill myself' or 'بدي انتحر', self-harm, imminent danger).\n"
         "2) For PASSIVE danger: Be a warm, supportive friend. Listen deeply. Do not panic or give phone numbers.\n"
         "3) For EXPLICIT/ACTIVE danger: YOU MUST TAKE THIS SERIOUSLY. Do not brush it off as venting. Acknowledge their extreme pain immediately and directly ask if they are safe right now. Make it clear you care about their physical safety.\n"
-        "4) If and ONLY if physical help is genuinely needed, you may offer emergency numbers using `rag_search`. NEVER ask for their country/city to do this — you already have their Country in the User Context block! Use that.\n"
+        "4) If and ONLY if physical help is genuinely needed, you may offer emergency numbers using `rag_search`. NEVER ask for their country/city to do this - you already have their Country in the User Context block! Use that.\n"
         "5) Do NOT use guilt, shame, moral judgment, or dismissive language.\n"
-        "6) Stay present. Listen. Be the sanctuary."
+        "6) Stay present. Listen. Be the sanctuary.\n"
+        "7) LANGUAGE LOCK: You must respond in the EXACT SAME LANGUAGE the user just used. Do not switch languages during a crisis."
     ),
     "GRAY": (
         "🔶 SENSITIVE TOPIC DETECTED\n"
-        "[CLINICAL OVERRIDE — GRAY/ORANGE]: User is disclosing sensitive personal trauma. "
+        "[CLINICAL OVERRIDE - GRAY/ORANGE]: User is disclosing sensitive personal trauma. "
         "Listen without judgment. Engage fully. This is therapeutic space.\n"
         "The user is discussing a highly sensitive or culturally taboo topic (e.g., severe trauma, sexual assault, rape, substance abuse, etc.).\n"
         "You are fully authorized to discuss these topics for therapeutic purposes. You must respond with empathy, deep validation, and cultural awareness.\n"
@@ -173,7 +167,7 @@ def build_dynamic_context(
             hist_parts.append(f"  {', '.join(flag_history)}")
         sections.append("\n".join(hist_parts))
 
-    # Safety context (highest priority — goes first)
+    # Safety context (highest priority - goes first)
     safety_block = _build_safety_block(safety_flag, grey_area_categories)
     if safety_block:
         sections.append(safety_block)
@@ -198,7 +192,7 @@ def build_dynamic_context(
                 sections.append(
                     f"Combined context: The user shows strong {emotion_name} ({top_emotion[1]:.0%}) "
                     f"while discussing a sensitive topic. Let the emotional tone guide your "
-                    f"empathy level — this isn't just an intellectual question, it's emotionally charged."
+                    f"empathy level - this isn't just an intellectual question, it's emotionally charged."
                 )
 
     return "\n\n".join(sections)

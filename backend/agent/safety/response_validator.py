@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import re
+from logger import get_logger
+
+logger = get_logger(__name__)
 
 # Always block instructive self-harm (not topic words like طلاق or انتحار in empathetic context)
 INSTRUCTIVE_HARM_PHRASES = [
@@ -93,6 +96,18 @@ def validate_response(
     for phrase in DIAGNOSIS_PHRASES:
         if phrase.lower() in text_lower:
             return {"safe": False, "reason": f"Blocked phrase detected: '{phrase}'"}
+            
+    for phrase in REFUSAL_PHRASES:
+        if phrase.lower() in text_lower:
+            return {"safe": False, "reason": f"Refusal phrase detected: '{phrase}'"}
+            
+    for pattern in REFUSAL_PATTERNS:
+        if pattern.lower() in text_lower:
+            return {"safe": False, "reason": f"Refusal pattern detected: '{pattern}'"}
+
+    # Soft warning for routing scripts (don't block, just log)
+    if contains_routing_script(response_text):
+        logger.info(f"Routing script pattern detected in output (allowed): {response_text[:50]}...")
 
     # Number verification logic
     unverified_nums = get_unverified_numbers(response_text)

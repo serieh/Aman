@@ -17,17 +17,81 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 // Handle 401 Unauthorized errors automatically
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response && error.response.status === 401) {
-      // Token is invalid or expired
-      localStorage.removeItem('access');
-      localStorage.removeItem('refresh');
-      // Only redirect if we are not already on the login or landing page
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
-        window.location.href = '/login';
+  async (error) => {
+    const originalRequest = error.config;
+    
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+      if (originalRequest.url && originalRequest.url.includes('/auth/refresh')) {
+          localStorage.removeItem('access');
+          localStorage.removeItem('refresh');
+          if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
+            window.location.href = '/login';
+          }
+          return Promise.reject(error);
+      }
+
+      if (isRefreshing) {
+        return new Promise(function(resolve, reject) {
+          failedQueue.push({resolve, reject});
+        }).then(token => {
+          originalRequest.headers['Authorization'] = 'Bearer ' + token;
+          return api(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      const refreshToken = localStorage.getItem('refresh');
+      if (!refreshToken) {
+         isRefreshing = false;
+         localStorage.removeItem('access');
+         if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
+           window.location.href = '/login';
+         }
+         return Promise.reject(error);
+      }
+
+      try {
+        const { data } = await axios.post('/api/v1/auth/refresh/', { refresh: refreshToken });
+        const newAccess = data.access;
+        localStorage.setItem('access', newAccess);
+        if (data.refresh) {
+             localStorage.setItem('refresh', data.refresh);
+        }
+        api.defaults.headers.common['Authorization'] = 'Bearer ' + newAccess;
+        originalRequest.headers['Authorization'] = 'Bearer ' + newAccess;
+        processQueue(null, newAccess);
+        return api(originalRequest);
+      } catch (err) {
+        processQueue(err, null);
+        localStorage.removeItem('access');
+        localStorage.removeItem('refresh');
+        if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
+          window.location.href = '/login';
+        }
+        return Promise.reject(err);
+      } finally {
+        isRefreshing = false;
       }
     }
     return Promise.reject(error);

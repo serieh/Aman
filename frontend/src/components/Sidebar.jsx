@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Settings, LogOut, PanelLeftClose, MessageSquare, Edit2, Trash2, Check, X } from 'lucide-react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useChatStore } from '../store/useChatStore';
 import { useAuthStore } from '../store/useAuthStore';
 import api from '../api/axios';
 
 export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
   const navigate = useNavigate();
-  const { chatId } = useParams();
+  const location = useLocation();
+  const chatId = location.pathname.split('/chat/')[1] || null;
   const logout = useAuthStore(state => state.logout);
   const { chats, setChats, updateChatTitle, removeChat, generatingTitleChatId } = useChatStore();
 

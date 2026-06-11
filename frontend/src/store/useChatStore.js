@@ -16,13 +16,16 @@ export const useChatStore = create((set) => ({
   addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
   setModel: (model) => set({ model }),
   setGeneratingTitleChatId: (id) => set({ generatingTitleChatId: id }),
-  voiceMode: false,
-  setVoiceMode: (voiceMode) => set({ voiceMode }),
   updateChatTitle: (chatId, title) => set((state) => ({
     chats: state.chats.map(c => c.chat_id === chatId ? { ...c, title } : c),
     generatingTitleChatId: state.generatingTitleChatId === chatId ? null : state.generatingTitleChatId,
   })),
-  removeChat: (chatId) => set((state) => ({
-    chats: state.chats.filter(c => c.chat_id !== chatId)
-  })),
+  removeChat: (chatId) => set((state) => {
+    const isCurrent = state.currentChat && state.currentChat.chat_id === chatId;
+    return {
+      chats: state.chats.filter(c => c.chat_id !== chatId),
+      currentChat: isCurrent ? null : state.currentChat,
+      messages: isCurrent ? [] : state.messages
+    };
+  }),
 }));

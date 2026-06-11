@@ -1,10 +1,10 @@
 # safety/crisis_detector.py
-from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
 from sentence_transformers import SentenceTransformer
 import torch
 
 import os
+from agent.qdrant_connection import get_shared_qdrant_client
 from .crisis_keywords import fast_crisis_check, keyword_crisis_hit, pattern_crisis_hit
 
 QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
@@ -19,7 +19,6 @@ CRISIS_VECTOR_SIZE  = 384  # all-MiniLM-L6-v2 output size
 CRISIS_EMBED_MODEL  = "sentence-transformers/all-MiniLM-L6-v2"
 
 _embedder = None
-_client   = None
 
 
 # ─── Lazy Loaders ─────────────────────────────────────────────────────────────
@@ -36,11 +35,8 @@ def _get_embedder() -> SentenceTransformer:
     return _embedder
 
 
-def _get_client() -> QdrantClient:
-    global _client
-    if _client is None:
-        _client = QdrantClient(QDRANT_HOST, port=QDRANT_PORT)
-    return _client
+def _get_client():
+    return get_shared_qdrant_client()
 
 
 # ─── Collection Setup ─────────────────────────────────────────────────────────

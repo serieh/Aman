@@ -4,6 +4,7 @@ from .cultural import CULTURAL_PROMPT
 from .tools import TOOLS_PROMPT
 from .dynamic import build_dynamic_context
 from logger import get_logger
+import functools
 
 logger = get_logger(__name__)
 
@@ -17,6 +18,15 @@ Runtime Injection Order
 [5] USER MESSAGE
 """
 
+@functools.lru_cache(maxsize=10)
+def _get_static_prompt(mode: str) -> str:
+    return "\n\n".join([
+        get_core_prompt(mode),
+        SAFETY_PROMPT,
+        CULTURAL_PROMPT,
+        TOOLS_PROMPT,
+    ])
+
 def build_system_prompt(
     emotion=None,
     safety_flag=None,
@@ -28,7 +38,6 @@ def build_system_prompt(
 ):
     log_meta = f"System prompt constructed | mode: {mode}"
     if emotion:
-        # Assuming emotion might be a dict based on your other files, safely extract the string
         emotion_val = emotion.get('emotion', 'unknown') if isinstance(emotion, dict) else emotion
         log_meta += f" | emotion: {emotion_val}"
     if safety_flag:
@@ -40,19 +49,16 @@ def build_system_prompt(
         parts = []
         if user_context:
             parts.append(user_context)
-        parts.extend([
-            get_core_prompt(mode),
-            SAFETY_PROMPT,
-            CULTURAL_PROMPT,
-            TOOLS_PROMPT,
-            build_dynamic_context(
-                emotion=emotion,
-                safety_flag=safety_flag,
-                grey_area_categories=grey_area_categories,
-                emotion_history=emotion_history,
-                flag_history=flag_history,
-            )
-        ])
+        
+        parts.append(_get_static_prompt(mode))
+        
+        parts.append(build_dynamic_context(
+            emotion=emotion,
+            safety_flag=safety_flag,
+            grey_area_categories=grey_area_categories,
+            emotion_history=emotion_history,
+            flag_history=flag_history,
+        ))
         return "\n\n".join(parts)
     except Exception as e:
         logger.error(f"Failed to build system prompt | error: {str(e)}")
