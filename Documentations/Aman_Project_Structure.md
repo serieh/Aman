@@ -92,11 +92,12 @@ The physical structure of the workspace is organized into three major zones:
     │   │
     │   ├── memory/                     # Context Management & History Compaction
     │   │   ├── history.py              # Database history loader and formatter
-    │   │   └── summarizer.py           # Background rolling summaries compiler
+    │   │   ├── summarizer.py           # Background rolling summaries compiler
+    │   │   └── long_term_memory.py     # Long-term user facts extraction and storage
     │   │
     │   ├── tools/                      # Tool Definitions
     │   │   ├── __init__.py
-    │   │   └── rag.py                  # RAG search tool (@tool decorated)
+    │   │   └── rag/                    # RAG retrieval module (run_rag execution)
     │   │
     │   └── safety/                     # Two-Stage Safety Firewall
     │       ├── __init__.py
@@ -182,14 +183,15 @@ System prompts are assembled dynamically to guide the LLM's behavior:
 *   `dynamic.py`: Formats current session flags into the dynamic context layer.
 
 ### 3.2 Memory & Context Management (`backend/agent/memory/`)
-Provides context management, feeding recent messages to the LLM and archiving historical ones to keep processing windows slim.
+Provides context management, feeding recent messages to the LLM and archiving historical ones to keep processing windows slim. Also manages long-term vector database memory.
 *   `history.py`: Accesses Django models via ORM to retrieve active conversation histories and latest summaries. Prepares the list of LangChain message classes.
 *   `summarizer.py`: Houses background thread utilities to compile old messages into rolling summaries when conversation length thresholds are met.
+*   `long_term_memory.py`: Extracts biographical facts from messages and stores/retrieves them from Qdrant.
 
-### 3.3 LangGraph Architecture (`backend/agent/graph.py` & `tools/`)
+### 3.3 LangGraph Architecture (`backend/agent/graph.py` & `llm.py`)
 Compiles the LangGraph state machine which controls the reasoning lifecycle.
 *   `graph.py`: Defines the `StateGraph` state structure, routing logic, nodes, and compiles the final executables. It binds tools directly to the LLM.
-*   `tools/rag.py`: Implements the `rag_search` tool which performs semantic lookups in the Qdrant `amaan_knowledge` collection.
+*   `llm.py`: Registers the tools (`rag_search` and `search_user_memory`) and configures LLM models (ChatGroq and ChatOllama) with fallbacks.
 
 ### 3.4 Safety Module (`backend/agent/safety/`)
 A dual-stage firewall protecting both input and output.
@@ -332,7 +334,7 @@ All page views and REST endpoints are consolidated under Django apps, routing re
 
 1.  **Strict Separation of AI and Web Routing**: The `agent/` folder is framework-agnostic. All DB queries within it are routed through specialized loader and writer utility functions in `agent.memory.history.py` (which use safe Django ORM calls).
 2.  **Dual-Stage Safety Firewall**: The system runs input checks *before* prompt assembly (to adjust prompt parameters and intercept crises) and output checks *after* compilation (to validate content against diagnostic/medication filters).
-3.  **Thread-Safe Background Operations**: Title generation and rolling summarizations run in separate `threading.Thread` instances. This prevents slow LLM processing from blocking the main request/response lifecycle. Connections are safely handled using Django's `close_old_connections()` in `finally` blocks.
-4.  **Flexible Local and Cloud Routing**: The system's LLM components (`agent/llm.py` and `agent/config.py`) support routing queries to cloud APIs like Groq (`openai/gpt-oss-120b`) for deep reasoning or local Ollama instances (`gemma4:e2b`) for fast fallbacks and summarization, making it adaptable to hardware limitations.
-5.  **Bilingual Dynamic Prompting**: System prompt layers are assembled dynamically per call based on inferred context, ensuring high quality in both Arabic and English.
-6.  **Integrated Voice Pipeline**: Voice transcription (Whisper STT) and speech synthesis (Coqui/Piper TTS) are native components of the message pipeline, enabling hands-free communication flows.
+3.  **Thread-Safe Background Operations & Awaited Tasks**: Title generation and rolling summarizations run in separate background instances. However, critical DB operations like fact extraction (`extract_and_save_facts`) are fully awaited in `runner.py` before closing responses to ensure database synchronization completeness.
+4.  **Resilient LLM Routing with Fallbacks**: The system's LLM components (`agent/llm.py`) support routing queries to cloud APIs (Groq) for deep reasoning and local Ollama for fast operations. Crucially, the fast model is wrapped with `.with_fallbacks([thinking_secondary_llm])` to prevent connection-refused crashes when local Ollama is offline.
+5.  **Bilingual Dynamic Prompting & Language Retention**: System prompts are assembled dynamically based on context. Under rules 5 and 6 of `core.py`, language consistency is strictly locked to prevent switching response languages due to foreign proper nouns mentioned in conversation or Latin characters in user profile metadata.
+6.  **Transition to Dynamic Memory Retrieval**: Avoided injecting the entire long-term memory history into system prompts at startup. Instead, the agent is equipped with a `search_user_memory` tool to dynamically query specific user facts at runtime.

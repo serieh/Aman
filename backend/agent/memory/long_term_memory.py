@@ -1,13 +1,15 @@
 import uuid, asyncio, os
 from qdrant_client.models import Distance, VectorParams, FilterSelector, Filter, FieldCondition, MatchValue
-from agent.config import QDRANT_USER_COLLECTION, EMBEDDINGS_VECTOR_SIZE
-from agent.llm import llm_fast
 from langchain_core.messages import HumanMessage
+
+from agent.config import QDRANT_USER_COLLECTION, EMBEDDINGS_VECTOR_SIZE
 from agent.tools.rag.embeddings import get_embedding_model
 from agent.qdrant_connection import get_shared_qdrant_client
+from agent.llm import llm_fast
+from logger import get_logger
 
-def get_qdrant_client():
-    return get_shared_qdrant_client()
+logger = get_logger(__name__)
+
 
 def ensure_user_collection(client, vector_size=EMBEDDINGS_VECTOR_SIZE):
     if not client.collection_exists(QDRANT_USER_COLLECTION):
@@ -18,8 +20,7 @@ def ensure_user_collection(client, vector_size=EMBEDDINGS_VECTOR_SIZE):
 
 
 def clear_user_facts(user_id: str):
-    """Delete all permanent facts for a specific user from Qdrant."""
-    client = get_qdrant_client()
+    client = get_shared_qdrant_client()
     try:
         ensure_user_collection(client)
         client.delete(
@@ -36,18 +37,16 @@ def clear_user_facts(user_id: str):
             ),
         )
     except Exception as e:
-        print(f"Failed to clear memory: {e}")
+        logger.error(f"Failed to clear memory: {e}")
 
 
 def retrieve_user_facts(user_id: str, query: str = "") -> str:
-    """Retrieve long-term facts for a user."""
-    client = get_qdrant_client()
+    client = get_shared_qdrant_client()
     try:
         ensure_user_collection(client)
     except Exception:
         return ""
     
-
     embedder = get_embedding_model()
     
     # If no specific query, we just search for their user_id basically, 
@@ -74,11 +73,12 @@ def retrieve_user_facts(user_id: str, query: str = "") -> str:
         facts = [res.payload.get("fact", "") for res in results if res.payload]
         return "\n".join(f"- {f}" for f in facts if f)
     except Exception as e:
-        print(f"DEBUG: Exception in retrieve_user_facts: {e}")
+        logger.error(f"Exception in retrieve_user_facts: {e}")
         return ""
 
+
 async def extract_and_save_facts(user_id: str, new_user_message: str, ai_response: str):
-    """Background task to extract facts and save to Qdrant."""
+    logger.info(f"Extracting new user facts for user_id: {user_id}")
     prompt = (
         "Extract any new, permanent facts about the user from the following conversation. "
         "Ignore temporary feelings or casual chat. Focus on biographical facts, persistent traits, or major events. "
@@ -92,22 +92,27 @@ async def extract_and_save_facts(user_id: str, new_user_message: str, ai_respons
         reply = await asyncio.to_thread(llm_fast.invoke, [HumanMessage(content=prompt)])
         content = reply.content.strip()
         
+        logger.info(f"Raw reply content from llm_fast: '{content}'")
+        
         if content == "NONE" or not content:
+            logger.info(f"No new facts extracted for user_id: {user_id}")
             return
             
         facts = [f.strip("- ").strip() for f in content.split("\n") if f.strip("- ").strip()]
         
         if not facts:
+            logger.info(f"No new facts extracted (empty list) for user_id: {user_id}")
             return
             
-        client = get_qdrant_client()
+        logger.info(f"Extracted {len(facts)} new facts for user_id: {user_id}")
+        client = get_shared_qdrant_client()
         ensure_user_collection(client)
         
-
         embedder = get_embedding_model()
         
         points = []
         for fact in facts:
+            logger.info(f"Saving fact: '{fact}' for user_id: {user_id}")
             vec = await asyncio.to_thread(embedder.embed_query, fact)
             points.append(
                 {
@@ -121,5 +126,6 @@ async def extract_and_save_facts(user_id: str, new_user_message: str, ai_respons
             collection_name=QDRANT_USER_COLLECTION,
             points=points
         )
+        logger.info(f"Successfully saved {len(points)} facts to Qdrant for user_id: {user_id}")
     except Exception as e:
-        print(f"Failed to extract/save facts: {e}")
+        logger.error(f"Failed to extract/save facts for user_id {user_id}: {e}")

@@ -3,6 +3,7 @@ from typing import TypedDict, Annotated, Sequence
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
 from langchain_core.runnables import RunnableConfig
+
 from .llm import structured_llm_thinking, structured_llm_fast, tools
 from logger import get_logger
 from .config import LLM_MAX_RETRIES, FALLBACK_RESPONSE
@@ -17,7 +18,6 @@ class AgentState(TypedDict):
     response: dict | None
     model_preference: str
     
-
 
 async def agent_node(state: AgentState, config: RunnableConfig):
     chat_id = state.get("chat_id", "unknown")
@@ -38,8 +38,7 @@ async def agent_node(state: AgentState, config: RunnableConfig):
             
             # Otherwise, it's final ResponseFormat object
             resp_dict = response.model_dump() if hasattr(response, "model_dump") else {"content": response.content}
-            emotion = resp_dict.get("emotional_state", {}).get("emotion", "unknown")
-            logger.info(f"LLM final response generated | chat_id: {chat_id} | detected_emotion: {emotion} | attempt: {attempt}")
+            logger.info(f"LLM final response generated | chat_id: {chat_id} | attempt: {attempt}")
             return {"response": resp_dict}
 
         except Exception as e:
@@ -54,7 +53,6 @@ def should_use_tools(state: AgentState) -> str:
     Edge condition: did the LLM ask to call a tool?
     Returns "tools" → ToolNode, or "end" → done.
     """
-    # Count tool calls to prevent infinite loops
     tool_calls_count = sum(1 for m in state["messages"] if getattr(m, "tool_calls", None))
     if tool_calls_count >= 3:
         logger.warning(f"Max tool iterations reached ({tool_calls_count}). Forcing end.")

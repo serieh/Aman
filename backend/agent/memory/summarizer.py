@@ -1,7 +1,11 @@
 import json
 from django.db.models import Max
+from django.db import close_old_connections
+from chats.models import Message, Summary
+
 from agent.llm import llm_summarize
 from logger import get_logger 
+
 
 logger = get_logger(__name__)
 
@@ -55,10 +59,7 @@ def _format_messages_to_string(messages, summary) -> str:
     return "\n".join(lines)
 
 
-def run_summarization_background(chat_id: str, message_rows: list, old_summary):
-    from django.db import close_old_connections
-    from chats.models import Message, Summary
-
+def run_summarization(chat_id: str, message_rows: list, old_summary):
     mid = len(message_rows) // 2
     old_messages = message_rows[:mid]
     

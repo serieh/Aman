@@ -1,4 +1,4 @@
-import threading, asyncio
+import threading, asyncio, json
 from datetime import date
 from django.db import close_old_connections
 from langchain_core.messages import SystemMessage, HumanMessage
@@ -12,7 +12,8 @@ from agent.prompts.builder import build_system_prompt
 from agent.emotion_estimator import estimate_emotion
 from agent.safety.safety_runner import run_input_safety, run_output_safety
 from agent.config import SAFETY_MAX_OUTPUT_RETRIES
-from agent.memory.long_term_memory import retrieve_user_facts, extract_and_save_facts
+from agent.memory.long_term_memory import extract_and_save_facts
+from chats.models import Message
 
 
 logger = get_logger(__name__)
@@ -35,89 +36,81 @@ def _generate_title_background(user_message: str, chat_id: str):
         close_old_connections()
 
 
+def _fetch_emotion_and_flags_history(chat_id: str):
+    recent_msgs = Message.objects.filter(chat_id=chat_id, role="user").order_by("-creation_date")[:5]
+    
+    emotions = []
+    flags = []
+    for m in reversed(recent_msgs):
+        if m.emotional_state:
+            em_dict = m.emotional_state
+            if isinstance(em_dict, str):
+                try:
+                    em_dict = json.loads(em_dict)
+                except:
+                    em_dict = {}
+
+            if em_dict and isinstance(em_dict, dict):
+                top = ", ".join(f"{k}={int(v * 100)}%" for k, v in list(em_dict.items())[:2])
+                emotions.append(top)
+
+        if m.safety_flag and m.safety_flag not in ["SAFE", "None", None]:
+            flags.append(m.safety_flag)
+
+    return emotions, flags
+
+
+def _get_user_context(user_id: str):
+    try:
+        user = User.objects.get(id=user_id)
+        age = (date.today() - user.birthdate).days // 365 if user.birthdate else "unknown"
+        return (
+            f"Name: {user.name}\n"
+            f"Age: {age}\n"
+            f"Gender: {user.gender}\n"
+            f"Country: {user.country}\n"
+        )
+    except Exception:
+        return ""
+
+
+def _check_chat_title(chat_id: str, user_message: str):
+    # Check if a title has ever been generated/attempted for this chat
+    chat_title = Chat.objects.filter(chat_id=chat_id).values_list("title", flat=True).first()
+    if chat_title is None:
+        # Set a placeholder immediately to block subsequent messages from starting duplicate threads
+        Chat.objects.filter(chat_id=chat_id).update(title="Untitled Chat")
+        
+        logger.debug(f"Starting background title generation | chat_id: {chat_id}")
+        threading.Thread(
+            target=_generate_title_background,
+            args=(user_message, chat_id),
+            daemon=True
+        ).start()
+
+
 async def run_agent(user_id: str, chat_id: str, user_message: str, model_preference: str = "2", mode: str = "normal"):
     logger.info(f"Async Agent runner started | chat_id: {chat_id} | id: {user_id} | mode: {mode}")
 
     try:
-        # Retrieve histories helper
-        def _fetch_histories():
-            from chats.models import Message
-            recent_msgs = Message.objects.filter(chat_id=chat_id, role="user").order_by("-creation_date")[:5]
-            emotions = []
-            flags = []
-            for m in reversed(recent_msgs):
-                if m.emotional_state:
-                    import json
-                    em_dict = m.emotional_state
-                    if isinstance(em_dict, str):
-                        try:
-                            em_dict = json.loads(em_dict)
-                        except:
-                            em_dict = {}
-                    if em_dict and isinstance(em_dict, dict):
-                        top = ", ".join(f"{k}={int(v * 100)}%" for k, v in list(em_dict.items())[:2])
-                        emotions.append(top)
-                if m.safety_flag and m.safety_flag not in ["SAFE", "None", None]:
-                    flags.append(m.safety_flag)
-            return emotions, flags
-
-        # User context helper
-        def _get_user_context():
-            try:
-                user = User.objects.get(id=user_id)
-                age = (date.today() - user.birthdate).days // 365 if user.birthdate else "unknown"
-                return (
-                    f"Name: {user.name}\n"
-                    f"Age: {age}\n"
-                    f"Gender: {user.gender}\n"
-                    f"Country: {user.country}\n"
-                )
-            except Exception:
-                return ""
-
-        # Launch parallel tasks to minimize TTFB
-        history_task = asyncio.to_thread(load_history, chat_id)
-        emotion_task = asyncio.to_thread(estimate_emotion, user_message)
-        safety_task = asyncio.to_thread(run_input_safety, user_message)
-        user_context_task = asyncio.to_thread(_get_user_context)
-        facts_task = asyncio.to_thread(retrieve_user_facts, user_id, user_message)
-        histories_task = asyncio.to_thread(_fetch_histories)
-
         (
             history,
             emotion,
             safety,
-            base_user_context,
-            facts,
+            user_context, # base_user_context
             (emotion_history, flag_history)
         ) = await asyncio.gather(
-            history_task,
-            emotion_task,
-            safety_task,
-            user_context_task,
-            facts_task,
-            histories_task
+            asyncio.to_thread(load_history, chat_id),
+            asyncio.to_thread(estimate_emotion, user_message),
+            asyncio.to_thread(run_input_safety, user_message),
+            asyncio.to_thread(_get_user_context, user_id),
+            asyncio.to_thread(_fetch_emotion_and_flags_history, chat_id)
         )
 
         safety_tier = safety.get("safety_tier")
         category_hints = safety.get("category_hints", "")
 
-        user_context = base_user_context
-        if facts:
-            user_context += f"\nHere are some permanent facts you remember about the user:\n{facts}\n"
-
-        if not history:
-            def start_title_gen():
-                chat_title = Chat.objects.filter(chat_id=chat_id).values_list("title", flat=True).first()
-                if not chat_title or chat_title == "Untitled Chat":
-                    logger.debug(f"Starting background title generation | chat_id: {chat_id}")
-                    threading.Thread(
-                        target=_generate_title_background,
-                        args=(user_message, chat_id),
-                        daemon=True
-                    ).start()
-            
-            await asyncio.to_thread(start_title_gen)
+        await asyncio.to_thread(_check_chat_title, chat_id, user_message)
 
         system_prompt = build_system_prompt(
             emotion=emotion,
@@ -135,7 +128,6 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
             HumanMessage(content=user_message),
         ]
         
-        # We pass state to the graph
         state_input = {
             "messages": messages,
             "user_id": user_id,
@@ -143,7 +135,6 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
             "model_preference": model_preference
         }
         
-        # Persist user message immediately
         await asyncio.to_thread(
             save_message,
             chat_id,
@@ -160,6 +151,7 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
         for attempt in range(SAFETY_MAX_OUTPUT_RETRIES):
             final_text = ""
             tools_called_in_attempt = False
+
             # Run graph in streaming mode
             async for event in GRAPH.astream_events(state_input, version="v1"):
                 kind = event["event"]
@@ -177,12 +169,14 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
                         else:
                             final_text += chunk.content
                             yield chunk.content
+
                 elif kind == "on_chat_model_end":
                     output = event["data"].get("output")
                     if output and hasattr(output, "content") and output.content and not final_text.strip() and not tools_called_in_attempt:
                         # Fallback models might skip stream events when executed inside with_fallbacks
                         final_text = output.content
                         yield final_text
+
                 elif kind == "on_tool_start":
                     tools_called_in_attempt = True
                     yield {"tool_call": event.get("name"), "tool_input": event.get("data", {}).get("input")}
@@ -219,7 +213,7 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
                     crisis_flag=safety.get("crisis_flag", False),
                     grey_area_flag=safety.get("grey_area_flag", False)
                 )
-            
+       
             is_safe = output_safety.get("safe", True)
             
             if is_safe:
@@ -254,17 +248,7 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
 
         await asyncio.to_thread(save_message, chat_id, role="assistant", content=assistant_content, safety_flag=assistant_flag)
         await asyncio.to_thread(update_chat_modify_date, chat_id)
-        
-        # If in voice mode and the response is safe, generate and yield TTS audio
-        if mode == "voice" and is_safe and assistant_content:
-            from agent.voice.tts import generate_audio
-            logger.info(f"Generating audio for response | chat_id: {chat_id}")
-            audio_base64 = await generate_audio(assistant_content)
-            if audio_base64:
-                yield {"audio": audio_base64}
-        
-        # Extract new facts in background
-        asyncio.create_task(extract_and_save_facts(user_id, user_message, final_text))
+        await extract_and_save_facts(user_id, user_message, final_text)
         
         logger.info(f"Agent runner completed successfully | chat_id: {chat_id}")
         

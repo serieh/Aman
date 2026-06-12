@@ -1,10 +1,13 @@
-import torch, textwrap
-import functools
+import torch, textwrap, functools
 from collections import defaultdict
 from transformers import pipeline
 
 from logger import get_logger
-from agent.config import EMOTION_MODEL, EMOTION_CONFIDENCE_THRESHOLD, EMOTION_RELEVANT_LABELS
+from agent.config import( 
+    EMOTION_MODEL, EMOTION_CONFIDENCE_THRESHOLD, 
+    EMOTION_RELEVANT_LABELS, CHUNK_SIZE, STRONG_EMOTIONS, 
+    STRONG_EMOTIONS_THRESHOLD, EMOTION_CASHE_SIZE
+    )
 
 logger = get_logger(__name__)
 
@@ -23,12 +26,9 @@ _classifier = pipeline(
 )
 
 logger.info("Emotion estimation model loaded successfully")
-
 _relevant_set = set(EMOTION_RELEVANT_LABELS)
 
-
-
-@functools.lru_cache(maxsize=1000)
+@functools.lru_cache(maxsize=EMOTION_CASHE_SIZE)
 def estimate_emotion(text: str) -> dict:
     """
     Run the pretrained emotion classifier on the given text.
@@ -45,14 +45,11 @@ def estimate_emotion(text: str) -> dict:
             return {"neutral": 1.0}
 
         # Chunk the text to avoid token limits (400 chars is safely < 512 tokens)
-        chunks = textwrap.wrap(text, width=400, break_long_words=False)
+        chunks = textwrap.wrap(text, width=CHUNK_SIZE, break_long_words=False)
         if not chunks:
             chunks = [text]
 
-        # Run pipeline on all chunks (batching)
         chunk_results = _classifier(chunks)
-        
-        # Aggregate scores
         aggregated_scores = defaultdict(float)
         
         for scores in chunk_results:
@@ -72,8 +69,7 @@ def estimate_emotion(text: str) -> dict:
         filtered = dict(sorted(filtered.items(), key=lambda x: x[1], reverse=True))
 
         # Down-weight neutral if a strong emotion is present
-        strong_emotions = ["sadness", "anger", "fear", "grief", "disappointment", "remorse", "disgust", "nervousness"]
-        if any(e in filtered and filtered[e] >= 0.10 for e in strong_emotions) and "neutral" in filtered:
+        if any(e in filtered and filtered[e] >= STRONG_EMOTIONS_THRESHOLD for e in STRONG_EMOTIONS) and "neutral" in filtered:
             filtered["neutral"] = round(filtered["neutral"] * 0.1, 4)
             if filtered["neutral"] < EMOTION_CONFIDENCE_THRESHOLD:
                 del filtered["neutral"]

@@ -3,7 +3,7 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from chats.models import Message, Summary, Chat
 from django.utils import timezone
 
-from agent.memory.summarizer import run_summarization_background
+from agent.memory.summarizer import run_summarization
 from ..config import MAX_MESSAGES_BEFORE_SUMMARY
 from logger import get_logger
 
@@ -72,7 +72,7 @@ def load_history(chat_id: str) -> list:
     if len(rows) >= MAX_MESSAGES_BEFORE_SUMMARY:
         logger.info(f"Message limit exceeded ({len(rows)} >= {MAX_MESSAGES_BEFORE_SUMMARY}), triggering summarization | chat_id: {chat_id}")
         threading.Thread(
-            target=run_summarization_background,
+            target=run_summarization,
             args=(chat_id, rows, last_summary),
             daemon=True,
         ).start()

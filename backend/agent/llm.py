@@ -1,20 +1,31 @@
 import json, re, os
+from typing import Annotated
 from dotenv import load_dotenv
 from langchain_ollama import ChatOllama
 from langchain_core.messages import SystemMessage, HumanMessage
 from pydantic import BaseModel
 from langchain.tools import tool
 from langchain_groq import ChatGroq
+from langchain_core.runnables import RunnableLambda
+from langgraph.prebuilt import InjectedState
 
-load_dotenv()
+from .config import (
+    LLM_FAST_MODEL, LLM_FAST_CONTEXT_WINDOW, 
+    LLM_FAST_KEEP_ALIVE, LLM_FAST_REPEAT_PENALTY, LLM_FAST_THINK,
 
-from .config import LLM_FAST_MODEL, LLM_CONTEXT_WINDOW, LLM_REPEAT_PENALTY, LLM_MAX_RETRIES, GROQ_MODEL_NAME, GROQ_SECONDARY_MODEL_NAME
+    LLM_THINKING_MODEL_NAME, LLM_THINKING_SECONDARY_MODEL_NAME,
+    LLM_THINKING_MAX_TOKENS, LLM_THINKING_MAX_RETRIES,
+
+    hard_refusal_patterns, soft_disclaimers,
+    LLM_MAX_RETRIES,
+)
 from .prompts.summary import SUMMARY_PROMPT
 from .prompts.title import TITLE_PROMPT
 from .tools.rag.RAG import run_rag
 from logger import get_logger
-from langchain_core.runnables import RunnableLambda
 
+
+load_dotenv()
 logger = get_logger(__name__)
 
 @tool
@@ -25,21 +36,34 @@ def rag_search(query: str) -> str:
     logger.info(f"RAG tool invoked with query: {query}")
     result = run_rag(query)
     passages = result.get("passages", [])
+    
     if not passages:
-        return "No relevant passages found in the knowledge base. Please answer the user's question using your general therapeutic knowledge and do your best to respond."
+        return "No relevant passages found in the knowledge base."
     
     formatted = "\n\n---\n\n".join(passages)
-    return f"""<SYSTEM_DIRECTIVE_STRICT>
-توجيه صارم للنظام: 
-1. يجب أن تجيب باللغة العربية حصراً وبنفس لهجة شخصيتك.
-2. لا تبدأ إجابتك بأي ترحيب (مثل "أهلاً بك" أو "مرحباً").
-3. أجب مباشرة على سؤال المستخدم بناءً على هذه المعلومات فقط.
-</SYSTEM_DIRECTIVE_STRICT>
+    return f"Information retrieved from knowledge base:\n{formatted}"
 
-[معلومات البحث المرجعية]
-{formatted}"""
 
-tools = [rag_search]
+@tool
+def search_user_memory(query: str, state: Annotated[dict, InjectedState]) -> str:
+    """
+    Search your long-term memory for permanent facts, preferences, or biographical details
+    about the user. Use this when you need to recall past details they shared.
+    """
+    user_id = state.get("user_id")
+    if not user_id:
+        return "Error: User ID not found in conversation state."
+        
+    logger.info(f"Memory search invoked for user {user_id} with query: {query}")
+    # Local import to prevent circular dependency
+    from agent.memory.long_term_memory import retrieve_user_facts
+    facts = retrieve_user_facts(user_id, query)
+    
+    if not facts:
+        return "No relevant facts found in memory."
+    return f"[Retrieved User Memory]:\n{facts}"
+
+tools = [rag_search, search_user_memory]
 
 class ResponseFormat(BaseModel):
     content: str
@@ -153,29 +177,31 @@ class LLMWrapper:
 
 logger.info("Building LLMs")
 
-llm_fast = ChatOllama(
-    model=LLM_FAST_MODEL,
-    num_ctx=LLM_CONTEXT_WINDOW,
-    keep_alive=-1,
-    repeat_penalty=LLM_REPEAT_PENALTY,
-    think=False,
+thinking_llm = ChatGroq(
+    model_name=LLM_THINKING_MODEL_NAME,
+    max_retries=LLM_THINKING_MAX_RETRIES,
+    max_tokens=LLM_THINKING_MAX_TOKENS,
+    api_key=os.getenv("GROQ_API_KEY", "")
 )
+
+thinking_secondary_llm = ChatGroq(
+    model_name=LLM_THINKING_SECONDARY_MODEL_NAME,
+    max_retries=LLM_THINKING_MAX_RETRIES,
+    max_tokens=LLM_THINKING_MAX_TOKENS,
+    api_key=os.getenv("GROQ_API_KEY", "")
+)
+
+ollama_fast = ChatOllama(
+    model=LLM_FAST_MODEL,
+    num_ctx=LLM_FAST_CONTEXT_WINDOW,
+    keep_alive=LLM_FAST_KEEP_ALIVE,
+    repeat_penalty=LLM_FAST_REPEAT_PENALTY,
+    think=LLM_FAST_THINK,
+)
+llm_fast = ollama_fast.with_fallbacks([thinking_secondary_llm])
+
 fast_with_tools = llm_fast.bind_tools(tools)
 structured_llm_fast = LLMWrapper(fast_with_tools)
-
-groq_llm = ChatGroq(
-    model_name=GROQ_MODEL_NAME,
-    max_retries=1,
-    max_tokens=2048,
-    api_key=os.getenv("GROQ_API_KEY", "")
-)
-
-groq_secondary_llm = ChatGroq(
-    model_name=GROQ_SECONDARY_MODEL_NAME,
-    max_retries=1,
-    max_tokens=2048,
-    api_key=os.getenv("GROQ_API_KEY", "")
-)
 
 # Bind tools to both models, then create the fallback runnable
 def check_groq_output(response):
@@ -184,20 +210,6 @@ def check_groq_output(response):
     if not content and not getattr(response, "tool_calls", None):
         logger.warning("Groq returned empty response. Forcing fallback...")
         raise ValueError("Empty response from Groq API (likely safety filter).")
-        
-    hard_refusal_patterns = [
-        "cannot fulfill", "unable to provide", "i apologize, but i cannot", 
-        "i must decline", "i cannot engage", "i am not able to", 
-        "it would be inappropriate", "i must refrain",
-        "لا أستطيع", "لا يمكنني", "أعتذر، لا يمكنني", "أنا غير قادر على"
-    ]
-    
-    # Soft disclaimers that we can just strip out
-    soft_disclaimers = [
-        "As an AI language model, ",
-        "I want to be transparent that I am an AI. ",
-        "Please note that I am an AI and not a medical professional. "
-    ]
     
     if any(p in content_lower for p in hard_refusal_patterns):
         # If it's a short response, it's a hard refusal
@@ -214,48 +226,83 @@ def check_groq_output(response):
     response.content = clean_content
     return response
 
-groq_with_tools = groq_llm.bind_tools(tools) | RunnableLambda(check_groq_output)
-groq_secondary_with_tools = groq_secondary_llm.bind_tools(tools) | RunnableLambda(check_groq_output)
+groq_with_tools = thinking_llm.bind_tools(tools) | RunnableLambda(check_groq_output)
+groq_secondary_with_tools = thinking_secondary_llm.bind_tools(tools) | RunnableLambda(check_groq_output)
 
 llm_thinking_with_tools = groq_with_tools.with_fallbacks([groq_secondary_with_tools, fast_with_tools])
 structured_llm_thinking = LLMWrapper(llm_thinking_with_tools)
 
 
-def llm_summarize(user_message: str):
+def llm_summarize(history_text: str) -> dict:
     logger.info("LLM summarization requested")
     messages = [
         SystemMessage(content=SUMMARY_PROMPT),
-        HumanMessage(content=user_message)
+        HumanMessage(content=history_text)
     ]
+    
     for attempt in range(1, LLM_MAX_RETRIES + 1):
         try:
             reply = llm_fast.invoke(messages)
-            raw = reply.content.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-            parsed = json.loads(raw)
+            raw_content = reply.content or ""
+            
+            # Clean thinking blocks if present (common in reasoning models)
+            clean_content = re.sub(r"<think>.*?</think>", "", raw_content, flags=re.DOTALL).strip()
+            
+            # Extract JSON block using regex (ignores markdown fences and preambles)
+            json_match = re.search(r"\{.*\}", clean_content, flags=re.DOTALL)
+            if not json_match:
+                raise ValueError("No JSON object found in response")
+                
+            parsed = json.loads(json_match.group(0))
+            
+            # 3. Normalize keys to prevent KeyErrors in caller
+            normalized = {
+                "content": parsed.get("content") or parsed.get("summary") or "Factual summary of the conversation",
+                "emotional_state": parsed.get("emotional_state"),
+                "safety_flag": parsed.get("safety_flag")
+            }
+            
             logger.info("LLM summarization completed successfully")
-            return parsed
-        
+            return normalized
+            
         except Exception as e:
             logger.warning(f"LLM summarization attempt {attempt}/{LLM_MAX_RETRIES} failed | error: {str(e)}")
             if attempt == LLM_MAX_RETRIES:
                 logger.error("LLM summarization exhausted retries, using fallback")
-                return {"content": user_message, "emotional_state": None, "safety_flag": None}
+                # Return a safe fallback dict matching the expected schema
+                return {
+                    "content": "Conversation history chunk archived under fallback due to parsing error.",
+                    "emotional_state": None,
+                    "safety_flag": None
+                }
+            
 
-
-def title_generator(user_message: str):
+def title_generator(user_message: str) -> str:
     logger.info("LLM title generation requested")
     messages = [
         SystemMessage(content=TITLE_PROMPT),
         HumanMessage(content=user_message)
     ]
+    
     for attempt in range(1, LLM_MAX_RETRIES + 1):
         try:
             reply = llm_fast.invoke(messages)
-            title = reply.content.strip()
+            raw_content = reply.content or ""
+            
+            # Clean thinking blocks if present (common in reasoning models)
+            clean_title = re.sub(r"<think>.*?</think>", "", raw_content, flags=re.DOTALL).strip()
+            
+            # Programmatically clean up quotes, backticks, and trailing punctuation
+            clean_title = clean_title.strip("\"'`«»“”").rstrip(".").strip()
+            
+            if not clean_title:
+                raise ValueError("Generated title was empty")
+                
             logger.info("LLM title generation completed successfully")
-            return title
+            return clean_title
+            
         except Exception as e:
             logger.warning(f"LLM title generation attempt {attempt}/{LLM_MAX_RETRIES} failed | error: {str(e)}")
             if attempt == LLM_MAX_RETRIES:
                 logger.error("LLM title generation exhausted retries, using fallback")
-                return "New Chat"
+                return "Untitled Chat"

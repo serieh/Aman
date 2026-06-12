@@ -1,17 +1,11 @@
 # agents/rag.py
 from __future__ import annotations
-import os
 from typing import Any
 from agent.qdrant_connection import get_shared_qdrant_client
 from ...config import QDRANT_COLLECTION, TOP_K_RESULTS
 from . import embeddings
 
-_QDRANT_CLIENT: Any | None = None
 _EMBEDDING_MODEL: Any | None = None
-
-
-def _get_client():
-    return get_shared_qdrant_client()
 
 
 def _get_embedding_model() -> Any:
@@ -30,12 +24,11 @@ def _extract_payload_text(payload: dict[str, Any]) -> str | None:
 
 
 def run_rag(query: str, top_k: int = TOP_K_RESULTS) -> dict:
-    """Retrieve relevant passages from Qdrant using BGE-M3 embeddings."""
     if not query or not query.strip():
         return {"passages": [], "error": "empty_query"}
 
     try:
-        client = _get_client()
+        client = get_shared_qdrant_client()
         if not client.collection_exists(QDRANT_COLLECTION):
             return {"passages": [], "error": "collection_missing"}
 

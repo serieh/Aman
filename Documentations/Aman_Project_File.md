@@ -218,13 +218,13 @@ Triggered as an asynchronous background thread when message thresholds are met.
 
 ### 7.3 Long-Term Memory (User Facts) `[IMPLEMENTED]`
 
-Triggered as an asynchronous background thread when a chat exchange completes.
+Triggered and awaited when a chat exchange completes.
 
 **Process (in `backend/agent/memory/long_term_memory.py`):**
-1. Extract biographical and persistent facts from the latest user message and AI response using the fast LLM (`LLM_FAST_MODEL`).
-2. If facts are detected, embed them using the standard embedding model.
+1. Extract biographical and persistent facts from the latest user message and AI response using the fast LLM (`llm_fast`, with fallback to Groq if local Ollama is offline).
+2. If facts are detected, embed them using the standard embedding model (`BAAI/bge-m3`).
 3. Save the embedded facts to a dedicated Qdrant collection (`user_memory`) tagged with the `user_id`.
-4. When `load_history()` runs, relevant user facts are queried from Qdrant and injected into the dynamic context layer.
+4. The agent can dynamically query its long-term memory at runtime using the `search_user_memory` tool (performing a semantic vector lookup in Qdrant) to retrieve relevant historical facts.
 
 ---
 
@@ -629,3 +629,11 @@ All routes mapped in Django apps are detailed in `URL_API_Mapping.md`. Note that
 - **Implicit Empathy Tuning:** Overhauled `core.py` and `dynamic.py` to instruct the LLM to use *implicit* empathy rather than explicit, repetitive validation phrases (e.g., banning phrases like "I hear you", "I understand your pain").
 - **Pink Elephant Purge:** Rewrote few-shot safety examples in `safety.py` to eliminate hardcoded cliché phrases that the LLM was improperly memorizing.
 - **Punctuation Filtering:** Purged the em dash (`—`) symbol completely from the backend's internal prompt directory and strictly forbade its use in output formatting to prevent stylistic bleeding from the system instructions into the conversational UI.
+
+### v6.4 - Memory Tool-Calling & Reorganization (June 2026)
+- **Memory Retrieval Tool-Calling:** Transitioned long-term user memory retrieval from static startup context injection to dynamic tool-calling (`search_user_memory`). The agent now invokes the tool only when past biographical context is required, freeing up prompt token space.
+- **Fail-Safe Fast LLM Routing:** Refactored `llm_fast` to support fallback routing (`ollama_fast.with_fallbacks([thinking_secondary_llm])`). If the local Ollama service is offline, all background operations (title generation, conversation summarization, and memory extraction) seamlessly fail over to Groq.
+- **Awaited Fact Extraction:** Modified backend execution flow to explicitly `await` fact extraction (`extract_and_save_facts`) in `runner.py` rather than running it as an un-awaited background task. This prevents thread/event loop tear-downs from prematurely terminating database writes at the end of response streams.
+- **Language Retention & Lock:** Added explicit constraints in the system prompts (rules 5 and 6 in `core.py`) preventing the agent from switching response language due to Latin characters in user profile metadata or proper noun/name mentions of a different language origin in prompt messages.
+- **Memory Logging:** Integrated standard system logger in `long_term_memory.py`, replacing basic print calls with structured info, error, and debug messages tracking fact extraction, embeddings generation, and vector database upsert events.
+- **Tests Reorganization:** Restructured the `Tests` directory: removed deprecated/versioned files and unified multiple test scripts into a single `integration_scenarios.py` suite. Added a programmatic regression test `test_memory_saving.py` to verify memory saving, embedding, and vector retrieval.

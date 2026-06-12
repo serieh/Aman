@@ -112,13 +112,12 @@ class MessageView(APIView):
 
         user_message = serializer.validated_data["content"]
         model_preference = serializer.validated_data.get("model", "2")
-        mode = request.data.get("mode", "normal")
         user_id = str(request.user.id)
         chat_id_str = str(chat_id)
 
         logger.info(
             f"MessageView dispatching to agent | chat_id: {chat_id_str} "
-            f"| user_id: {user_id} | model: {model_preference} | mode: {mode}"
+            f"| user_id: {user_id} | model: {model_preference}"
         )
 
         import json
@@ -131,7 +130,7 @@ class MessageView(APIView):
                     chat_id=chat_id_str,
                     user_message=user_message,
                     model_preference=model_preference,
-                    mode=mode,
+                    mode="normal",
                 ):
                     if isinstance(payload, dict):
                         yield json.dumps(payload) + "\n"

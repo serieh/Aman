@@ -33,10 +33,7 @@ QDRANT_PORT = os.getenv("QDRANT_PORT")
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 
-def get_embedding_model(
-    model_name: str = EMBEDDINGS_MODEL,
-    device: str = EMBEDDINGS_DEVICE,
-) -> HuggingFaceEmbeddings:
+def get_embedding_model(model_name: str = EMBEDDINGS_MODEL, device: str = EMBEDDINGS_DEVICE ) -> HuggingFaceEmbeddings:
     global _EMBEDDING_MODEL
     if _EMBEDDING_MODEL is not None:
         return _EMBEDDING_MODEL
