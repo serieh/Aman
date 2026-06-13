@@ -8,6 +8,8 @@ from .models import Chat, Message
 from .serializers import ChatSerializer, ChatDetailSerializer, MessageRequestSerializer
 from agent.runner import run_agent
 from logger import get_logger
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 logger = get_logger(__name__)
 
@@ -15,7 +17,7 @@ logger = get_logger(__name__)
 
 class DashboardPageView(View):
     def get(self, request):
-        return render(request, "dashboard.html")
+        return render(request, "index.html")
 
 
 class ChatRoomPageView(View):
@@ -54,6 +56,17 @@ class ChatDetailView(APIView):
         chat = self.get_chat(request, chat_id)
         if not chat:
             return Response({"error": "Chat not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+        # Notify WebSocket to close and cancel generations
+        try:
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f"chat_{chat_id}",
+                {"type": "chat_deleted"}
+            )
+        except Exception as e:
+            logger.error(f"Failed to notify WebSocket of chat deletion: {e}")
+            
         chat.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -72,6 +85,19 @@ class ChatDetailView(APIView):
 class DeleteHistoryView(APIView):
     def delete(self, request):
         user = request.user
+        
+        # Notify WebSockets for all user chats
+        try:
+            chats = Chat.objects.filter(user=user)
+            channel_layer = get_channel_layer()
+            for chat in chats:
+                async_to_sync(channel_layer.group_send)(
+                    f"chat_{chat.chat_id}",
+                    {"type": "chat_deleted"}
+                )
+        except Exception as e:
+            logger.error(f"Failed to notify WebSockets of mass chat deletion: {e}")
+            
         # Delete all chats
         Chat.objects.filter(user=user).delete()
         # Delete from Qdrant Memory

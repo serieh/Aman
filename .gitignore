@@ -310,4 +310,9 @@ backend/test_groq.py
 backend/test_embeddings.py
 backend/add_mock_chats.py
 Documentations/
-Test/hardware_metrics.csv
+Test/
+generate_report.py
+get_console_errors.js
+test_db.py
+get_errors.py
+test_trigger.patch

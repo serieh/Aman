@@ -1,7 +1,6 @@
 import json, re, os
 from typing import Annotated
 from dotenv import load_dotenv
-from langchain_ollama import ChatOllama
 from langchain_core.messages import SystemMessage, HumanMessage
 from pydantic import BaseModel
 from langchain.tools import tool
@@ -10,11 +9,15 @@ from langchain_core.runnables import RunnableLambda
 from langgraph.prebuilt import InjectedState
 
 from .config import (
-    LLM_FAST_MODEL, LLM_FAST_CONTEXT_WINDOW, 
-    LLM_FAST_KEEP_ALIVE, LLM_FAST_REPEAT_PENALTY, LLM_FAST_THINK,
+    LLM_FAST_MODEL_NAME, LLM_FAST_MAX_TOKENS, LLM_FAST_MAX_RETRIES,
 
     LLM_THINKING_MODEL_NAME, LLM_THINKING_SECONDARY_MODEL_NAME,
     LLM_THINKING_MAX_TOKENS, LLM_THINKING_MAX_RETRIES,
+
+    USE_OLLAMA,
+    OLLAMA_FALLBACK_THINKING_MODEL, OLLAMA_FALLBACK_FAST_MODEL,
+    OLLAMA_FALLBACK_CONTEXT_WINDOW, OLLAMA_FALLBACK_KEEP_ALIVE,
+    OLLAMA_FALLBACK_REPEAT_PENALTY,
 
     hard_refusal_patterns, soft_disclaimers,
     LLM_MAX_RETRIES,
@@ -23,6 +26,7 @@ from .prompts.summary import SUMMARY_PROMPT
 from .prompts.title import TITLE_PROMPT
 from .tools.rag.RAG import run_rag
 from logger import get_logger
+from timing_logger import timed_operation
 
 
 load_dotenv()
@@ -32,16 +36,17 @@ logger = get_logger(__name__)
 def rag_search(query: str) -> str:
     """
     Search the RAG knowledge base for clinical guidelines, coping strategies, or relevant mental health information.
+    CRITICAL: If no results are found, or if the topic is not mental-health related, DO NOT apologize. DO NOT say "there was a mistake" or "let me try again". Simply answer the user directly using your general knowledge, acting naturally as a friend.
     """
     logger.info(f"RAG tool invoked with query: {query}")
     result = run_rag(query)
     passages = result.get("passages", [])
     
     if not passages:
-        return "No relevant passages found in the knowledge base."
+        return "SYSTEM INSTRUCTION: No relevant passages found. Answer the user naturally using your own general knowledge. DO NOT apologize. DO NOT mention that a search failed."
     
     formatted = "\n\n---\n\n".join(passages)
-    return f"Information retrieved from knowledge base:\n{formatted}"
+    return f"Information retrieved from knowledge base:\n{formatted}\n\nSYSTEM INSTRUCTION: If these passages are irrelevant to the user's question (e.g. general health like anosmia), ignore them completely and answer from your own knowledge. Do NOT mention the passages or apologize."
 
 
 @tool
@@ -68,6 +73,42 @@ tools = [rag_search, search_user_memory]
 class ResponseFormat(BaseModel):
     content: str
 
+# ── Helpers ──────────────────────────────────────────────────────────
+
+def _clean_thinking_blocks(text: str) -> str:
+    """Strip <think>...</think> blocks from model output."""
+    return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+
+
+def _try_extract_json_content(text: str) -> str | None:
+    """Try to extract a JSON 'content' field, but only if the text looks like JSON.
+    
+    Returns the extracted content string, or None if not applicable.
+    This is intentionally conservative to avoid accidentally destroying
+    Arabic or mixed-language prose that happens to contain braces.
+    """
+    stripped = text.strip()
+    # Only attempt JSON parsing if the text clearly starts with '{'
+    if not stripped.startswith("{"):
+        return None
+    try:
+        data = json.loads(stripped)
+        if isinstance(data, dict) and "content" in data and data["content"]:
+            return data["content"]
+    except json.JSONDecodeError:
+        pass
+    # Fallback: try to find a JSON object, but only if the whole thing looks like JSON
+    try:
+        json_match = re.search(r"\{.*\}", stripped, flags=re.DOTALL)
+        if json_match:
+            data = json.loads(json_match.group(0))
+            if isinstance(data, dict) and "content" in data and data["content"]:
+                return data["content"]
+    except (json.JSONDecodeError, ValueError):
+        pass
+    return None
+
+
 class LLMWrapper:
     def __init__(self, llm):
         self.llm = llm
@@ -86,21 +127,14 @@ class LLMWrapper:
         if "reasoning_content" in response.additional_kwargs and response.additional_kwargs["reasoning_content"]:
             raw_text = "<think>\n" + response.additional_kwargs["reasoning_content"] + "\n</think>\n" + raw_text
             
-        # Strip <think> block if present
-        clean_text = re.sub(r"<think>.*?</think>", "", raw_text, flags=re.DOTALL).strip()
+        clean_text = _clean_thinking_blocks(raw_text)
         if not clean_text:
-            clean_text = raw_text # Fallback
+            clean_text = raw_text  # Fallback
             
-        # Try parsing as JSON
-        try:
-            json_match = re.search(r"\{.*\}", clean_text, flags=re.DOTALL)
-            if json_match:
-                json_str = json_match.group(0)
-                data = json.loads(json_str)
-                if "content" in data:
-                    return ResponseFormat(content=data.get("content", ""))
-        except json.JSONDecodeError:
-            pass
+        # Try parsing as JSON only if it looks like JSON
+        json_content = _try_extract_json_content(clean_text)
+        if json_content:
+            return ResponseFormat(content=json_content)
             
         # Fallback: use the cleaned text as content directly
         return ResponseFormat(content=clean_text)
@@ -119,22 +153,15 @@ class LLMWrapper:
         if "reasoning_content" in response.additional_kwargs and response.additional_kwargs["reasoning_content"]:
             raw_text = "<think>\n" + response.additional_kwargs["reasoning_content"] + "\n</think>\n" + raw_text
             
-        # Strip <think> block if present
-        clean_text = re.sub(r"<think>.*?</think>", "", raw_text, flags=re.DOTALL).strip()
+        clean_text = _clean_thinking_blocks(raw_text)
         if not clean_text:
-            clean_text = raw_text # Fallback
+            clean_text = raw_text  # Fallback
             
-        # Try parsing as JSON
-        try:
-            json_match = re.search(r"\{.*\}", clean_text, flags=re.DOTALL)
-            if json_match:
-                json_str = json_match.group(0)
-                data = json.loads(json_str)
-                if "content" in data:
-                    logger.debug(f"[LLMWrapper] Parsed JSON content: {data.get('content', '')}")
-                    return ResponseFormat(content=data.get("content", ""))
-        except json.JSONDecodeError:
-            pass
+        # Try parsing as JSON only if it looks like JSON
+        json_content = _try_extract_json_content(clean_text)
+        if json_content:
+            logger.debug(f"[LLMWrapper] Parsed JSON content length: {len(json_content)}")
+            return ResponseFormat(content=json_content)
             
         logger.debug(f"[LLMWrapper] Fallback returning clean_text. Length: {len(clean_text)}")
         # Fallback: use the cleaned text as content directly
@@ -175,8 +202,13 @@ class LLMWrapper:
                     in_reasoning = False
             yield chunk
 
-logger.info("Building LLMs")
 
+# ═══════════════════════════════════════════════════════════════════════
+# Build LLM instances
+# ═══════════════════════════════════════════════════════════════════════
+logger.info(f"Building LLMs | USE_OLLAMA={USE_OLLAMA}")
+
+# ── Groq models ──────────────────────────────────────────────────────
 thinking_llm = ChatGroq(
     model_name=LLM_THINKING_MODEL_NAME,
     max_retries=LLM_THINKING_MAX_RETRIES,
@@ -191,19 +223,15 @@ thinking_secondary_llm = ChatGroq(
     api_key=os.getenv("GROQ_API_KEY", "")
 )
 
-ollama_fast = ChatOllama(
-    model=LLM_FAST_MODEL,
-    num_ctx=LLM_FAST_CONTEXT_WINDOW,
-    keep_alive=LLM_FAST_KEEP_ALIVE,
-    repeat_penalty=LLM_FAST_REPEAT_PENALTY,
-    think=LLM_FAST_THINK,
+# Fast model: same Groq model as thinking, but used without thinking/reasoning
+llm_fast_primary = ChatGroq(
+    model_name=LLM_FAST_MODEL_NAME,
+    max_retries=LLM_FAST_MAX_RETRIES,
+    max_tokens=LLM_FAST_MAX_TOKENS,
+    api_key=os.getenv("GROQ_API_KEY", "")
 )
-llm_fast = ollama_fast.with_fallbacks([thinking_secondary_llm])
 
-fast_with_tools = llm_fast.bind_tools(tools)
-structured_llm_fast = LLMWrapper(fast_with_tools)
-
-# Bind tools to both models, then create the fallback runnable
+# ── Safety output check ─────────────────────────────────────────────
 def check_groq_output(response):
     content = getattr(response, "content", "")
     content_lower = content.lower()
@@ -226,12 +254,54 @@ def check_groq_output(response):
     response.content = clean_content
     return response
 
-groq_with_tools = thinking_llm.bind_tools(tools) | RunnableLambda(check_groq_output)
+# ── Bind tools to all models ────────────────────────────────────────
+groq_thinking_with_tools = thinking_llm.bind_tools(tools) | RunnableLambda(check_groq_output)
 groq_secondary_with_tools = thinking_secondary_llm.bind_tools(tools) | RunnableLambda(check_groq_output)
+groq_fast_with_tools = llm_fast_primary.bind_tools(tools) | RunnableLambda(check_groq_output)
 
-llm_thinking_with_tools = groq_with_tools.with_fallbacks([groq_secondary_with_tools, fast_with_tools])
+# ── Build fallback chains conditionally ──────────────────────────────
+# Thinking chain: primary → secondary → [ollama gemma4:26b if USE_OLLAMA]
+thinking_fallbacks = [groq_secondary_with_tools]
+
+# Fast chain: primary (no-think) → secondary → [ollama gemma4:e2b if USE_OLLAMA]
+fast_fallbacks = [groq_secondary_with_tools]
+
+if USE_OLLAMA:
+    from langchain_ollama import ChatOllama
+    logger.info("Ollama fallback enabled — creating lazy fallback instances (not preloaded)")
+
+    ollama_thinking_fallback = ChatOllama(
+        model=OLLAMA_FALLBACK_THINKING_MODEL,
+        num_ctx=OLLAMA_FALLBACK_CONTEXT_WINDOW,
+        keep_alive=OLLAMA_FALLBACK_KEEP_ALIVE,
+        repeat_penalty=OLLAMA_FALLBACK_REPEAT_PENALTY,
+    ).bind_tools(tools)
+    thinking_fallbacks.append(ollama_thinking_fallback)
+
+    ollama_fast_fallback = ChatOllama(
+        model=OLLAMA_FALLBACK_FAST_MODEL,
+        num_ctx=OLLAMA_FALLBACK_CONTEXT_WINDOW,
+        keep_alive=OLLAMA_FALLBACK_KEEP_ALIVE,
+        repeat_penalty=OLLAMA_FALLBACK_REPEAT_PENALTY,
+    ).bind_tools(tools)
+    fast_fallbacks.append(ollama_fast_fallback)
+else:
+    logger.info("Ollama fallback disabled (cloud-only mode)")
+
+# Assemble the final chains
+llm_thinking_with_tools = groq_thinking_with_tools.with_fallbacks(thinking_fallbacks)
 structured_llm_thinking = LLMWrapper(llm_thinking_with_tools)
 
+llm_fast = groq_fast_with_tools.with_fallbacks(fast_fallbacks)
+fast_with_tools = llm_fast  # already has tools bound
+structured_llm_fast = LLMWrapper(llm_fast)
+
+logger.info(f"LLM chains built | thinking fallbacks: {len(thinking_fallbacks)} | fast fallbacks: {len(fast_fallbacks)}")
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Utility LLM functions (summarize, title)
+# ═══════════════════════════════════════════════════════════════════════
 
 def llm_summarize(history_text: str) -> dict:
     logger.info("LLM summarization requested")
@@ -242,11 +312,12 @@ def llm_summarize(history_text: str) -> dict:
     
     for attempt in range(1, LLM_MAX_RETRIES + 1):
         try:
-            reply = llm_fast.invoke(messages)
-            raw_content = reply.content or ""
+            with timed_operation("llm_summarize", attempt=attempt):
+                reply = llm_fast.invoke(messages)
+            raw_content = getattr(reply, "content", "") or ""
             
             # Clean thinking blocks if present (common in reasoning models)
-            clean_content = re.sub(r"<think>.*?</think>", "", raw_content, flags=re.DOTALL).strip()
+            clean_content = _clean_thinking_blocks(raw_content)
             
             # Extract JSON block using regex (ignores markdown fences and preambles)
             json_match = re.search(r"\{.*\}", clean_content, flags=re.DOTALL)
@@ -286,14 +357,15 @@ def title_generator(user_message: str) -> str:
     
     for attempt in range(1, LLM_MAX_RETRIES + 1):
         try:
-            reply = llm_fast.invoke(messages)
-            raw_content = reply.content or ""
+            with timed_operation("title_generation", attempt=attempt):
+                reply = llm_fast.invoke(messages)
+            raw_content = getattr(reply, "content", "") or ""
             
             # Clean thinking blocks if present (common in reasoning models)
-            clean_title = re.sub(r"<think>.*?</think>", "", raw_content, flags=re.DOTALL).strip()
+            clean_title = _clean_thinking_blocks(raw_content)
             
             # Programmatically clean up quotes, backticks, and trailing punctuation
-            clean_title = clean_title.strip("\"'`«»“”").rstrip(".").strip()
+            clean_title = clean_title.strip("\"'`«»\u201c\u201d").rstrip(".").strip()
             
             if not clean_title:
                 raise ValueError("Generated title was empty")

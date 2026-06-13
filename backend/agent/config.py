@@ -14,22 +14,31 @@ FALLBACK_RESPONSE = {
     "emotional_state": {"emotion": "unknown", "confidence": 0.0},
 }
 
+# ── Runtime Mode ─────────────────────────────────────────────────────
+import os
+USE_OLLAMA = os.environ.get("AMAN_USE_OLLAMA", "0") == "1"
+
 # ── LLM Models ───────────────────────────────────────────────────────
 LLM_MAX_RETRIES = 3
 DYNAMIC_CONTEXT_WINDOW = True
 
-# LLM FAST
-LLM_FAST_MODEL = "gemma4:e2b"   # danielsheep/gpt-oss-20b-Unsloth:latest
-LLM_FAST_CONTEXT_WINDOW = 4096
-LLM_FAST_KEEP_ALIVE = -1
-LLM_FAST_REPEAT_PENALTY = 1.2
-LLM_FAST_THINK = False
+# LLM FAST (same model as thinking, but with thinking disabled)
+LLM_FAST_MODEL_NAME = "openai/gpt-oss-120b"
+LLM_FAST_MAX_TOKENS = 2048
+LLM_FAST_MAX_RETRIES = 1
 
 # Thinking LLMs
 LLM_THINKING_MODEL_NAME = "openai/gpt-oss-120b"
 LLM_THINKING_SECONDARY_MODEL_NAME = "llama-3.3-70b-versatile"
 LLM_THINKING_MAX_TOKENS = 2048
 LLM_THINKING_MAX_RETRIES = 1
+
+# ── Ollama Fallback (only active when USE_OLLAMA=True) ───────────────
+OLLAMA_FALLBACK_THINKING_MODEL = "gemma4:26b"
+OLLAMA_FALLBACK_FAST_MODEL = "gemma4:e2b"
+OLLAMA_FALLBACK_CONTEXT_WINDOW = 4096
+OLLAMA_FALLBACK_KEEP_ALIVE = -1
+OLLAMA_FALLBACK_REPEAT_PENALTY = 1.2
 
 hard_refusal_patterns = [
     "cannot fulfill", "unable to provide", "i apologize, but i cannot", 

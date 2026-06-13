@@ -11,6 +11,8 @@ logger = get_logger(__name__)
 
 
 def load_history(chat_id: str) -> list:
+    from django.db import close_old_connections
+    close_old_connections()
     logger.debug(f"History load started | chat_id: {chat_id}")
 
     rows = list(
@@ -88,7 +90,10 @@ def save_message(
     content: str,
     emotional_state: dict | None = None,
     safety_flag: str | None = None,
+    message_id: str | None = None,
 ):
+    from django.db import close_old_connections
+    close_old_connections()
 
     log_meta = f"Saving message | chat_id: {chat_id} | role: {role}"
     if safety_flag:
@@ -99,17 +104,23 @@ def save_message(
 
     logger.debug(log_meta)
 
-    Message.objects.create(
-        chat_id=chat_id,
-        role=role,
-        content=content,
-        emotional_state=emotional_state if emotional_state else None,
-        safety_flag=safety_flag,
-        is_active=True,
-    )
+    kwargs = {
+        "chat_id": chat_id,
+        "role": role,
+        "content": content,
+        "emotional_state": emotional_state if emotional_state else None,
+        "safety_flag": safety_flag,
+        "is_active": True,
+    }
+    if message_id:
+        kwargs["message_id"] = message_id
+
+    Message.objects.create(**kwargs)
     logger.debug("Message saved successfully")
 
 
 def update_chat_modify_date(chat_id: str):
+    from django.db import close_old_connections
+    close_old_connections()
     Chat.objects.filter(chat_id=chat_id).update(modify_date=timezone.now())
     logger.debug("Chat modify_date updated successfully")

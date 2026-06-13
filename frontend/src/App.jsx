@@ -1,3 +1,4 @@
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/useAuthStore';
 import AuthPage from './pages/AuthPage';
@@ -16,7 +17,7 @@ function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<AuthPage />} />
-      <Route path="/app" element={<PrivateRoute><AppLayout /></PrivateRoute>}>
+      <Route path="/app" element={<PrivateRoute><ErrorBoundary><AppLayout /></ErrorBoundary></PrivateRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="chat" element={<Navigate to="/app" replace />} />
         <Route path="chat/:chatId" element={<ChatRoom />} />

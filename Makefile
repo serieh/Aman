@@ -1,18 +1,34 @@
-.PHONY: dev up down frontend backend ollama logs clean
+.PHONY: dev dev-cloud up down frontend backend ollama logs clean
 
+# ── Dev with Ollama fallback ─────────────────────────────────────────
 dev:
-	@echo "Starting the entire development stack..."
-	docker compose up -d                  
-	ollama serve > /dev/null 2>&1 &       
-	$(MAKE) -j 2 backend frontend         
+	@echo "Starting development stack (with Ollama fallback)..."
+	docker compose up -d
+	ollama serve > /dev/null 2>&1 &
+	$(MAKE) -j 2 backend-ollama frontend
+
+# ── Dev cloud-only (no Ollama) ───────────────────────────────────────
+dev-cloud:
+	@echo "Starting development stack (cloud-only, no Ollama)..."
+	docker compose up -d
+	$(MAKE) -j 2 backend-cloud frontend
+
+# ── Backend targets (internal) ───────────────────────────────────────
+backend-ollama:
+	@echo "Starting Backend (Ollama enabled)..."
+	cd backend && uv sync && \
+		AMAN_USE_OLLAMA=1 uv run python manage.py migrate && \
+		AMAN_USE_OLLAMA=1 uv run daphne -b 127.0.0.1 -p 8000 core.asgi:application
+
+backend-cloud:
+	@echo "Starting Backend (cloud-only)..."
+	cd backend && uv sync && \
+		AMAN_USE_OLLAMA=0 uv run python manage.py migrate && \
+		AMAN_USE_OLLAMA=0 uv run daphne -b 127.0.0.1 -p 8000 core.asgi:application
 
 frontend:
 	@echo "Starting Frontend..."
 	cd frontend && npm install && NODE_OPTIONS="--no-warnings" npm run dev
-
-backend:
-	@echo "Starting Backend..."
-	cd backend && uv sync && uv run python manage.py migrate && uv run daphne -b 127.0.0.1 -p 8000 core.asgi:application
 
 ollama:
 	@echo "Starting Ollama..."

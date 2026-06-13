@@ -28,13 +28,11 @@ export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
   }, [setChats]);
 
   const handleNewChat = () => {
-    useChatStore.getState().setMessages([]);
     navigate('/app');
     if (window.innerWidth < 768) setIsOpen(false);
   };
 
   const handleChatClick = (id) => {
-    useChatStore.getState().setMessages([]);
     if (window.innerWidth < 768) setIsOpen(false);
   };
 
@@ -67,10 +65,12 @@ export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
 
   const handleDeleteChat = async (id, e) => {
     e.preventDefault();
+    e.stopPropagation();
     try {
       await api.delete(`/chats/${id}/`);
       removeChat(id);
-      if (chatId === id) {
+      if (String(chatId) === String(id)) {
+        useChatStore.getState().setCurrentChat(null);
         navigate('/app');
       }
     } catch (err) {
@@ -112,7 +112,7 @@ export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
           <ul className="relative mt-1">
             {/* Sliding Indicator */}
             {(() => {
-              const activeIndex = chats.findIndex(c => c.chat_id === chatId);
+              const activeIndex = chats.findIndex(c => String(c.chat_id) === String(chatId));
               if (activeIndex === -1) return null;
               return (
                 <div 
@@ -131,9 +131,9 @@ export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
                   <Link 
                     to={`/app/chat/${chat.chat_id}`} 
                     onClick={() => handleChatClick(chat.chat_id)}
-                    className={`flex items-center h-full gap-2.5 px-3 rounded-xl text-sm transition-colors ${chatId === chat.chat_id ? 'text-aman-primary font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white font-medium'}`}
+                    className={`flex items-center h-full gap-2.5 px-3 rounded-xl text-sm transition-colors ${String(chatId) === String(chat.chat_id) ? 'text-aman-primary font-semibold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white font-medium'}`}
                   >
-                    <MessageSquare size={14} className={chatId === chat.chat_id ? 'text-aman-primary flex-shrink-0' : 'text-slate-400 flex-shrink-0'} />
+                    <MessageSquare size={14} className={String(chatId) === String(chat.chat_id) ? 'text-aman-primary flex-shrink-0' : 'text-slate-400 flex-shrink-0'} />
                     
                     {isEditing ? (
                       <div className="flex-1 flex items-center gap-1" onClick={(e) => e.preventDefault()}>
@@ -163,7 +163,15 @@ export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
                         </span>
                       </div>
                     ) : (
-                      <span className="truncate flex-1 pr-12">{chat.title || "Untitled Chat"}</span>
+                      <div className="flex-1 flex items-center justify-between min-w-0 pr-12">
+                        <span className="truncate">{chat.title || "Untitled Chat"}</span>
+                        {chat.is_generating && (
+                          <span className="flex h-2 w-2 relative flex-shrink-0 ml-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-aman-primary opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-aman-primary"></span>
+                          </span>
+                        )}
+                      </div>
                     )}
                   </Link>
 
@@ -173,6 +181,7 @@ export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
                       <button 
                         onClick={(e) => { 
                           e.preventDefault(); 
+                          e.stopPropagation();
                           setEditTitle(chat.title || "Untitled Chat"); 
                           setEditingChatId(chat.chat_id); 
                         }}

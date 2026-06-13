@@ -60,6 +60,7 @@ def _format_messages_to_string(messages, summary) -> str:
 
 
 def run_summarization(chat_id: str, message_rows: list, old_summary):
+    close_old_connections()
     mid = len(message_rows) // 2
     old_messages = message_rows[:mid]
     

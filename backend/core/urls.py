@@ -15,7 +15,11 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
+from django.conf import settings
+from django.views.static import serve
+import os
+from chats.views import DashboardPageView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -23,4 +27,11 @@ urlpatterns = [
     path("",  include("api.urls")), # for auth-related endpoints
     path("",  include("users.urls")),
     path("",  include("chats.urls")),
+    
+    # Serve built React static assets
+    re_path(r'^assets/(?P<path>.*)$', serve, {'document_root': os.path.join(settings.BASE_DIR.parent, 'frontend', 'dist', 'assets')}),
+    path('favicon.ico', serve, {'document_root': os.path.join(settings.BASE_DIR.parent, 'frontend', 'dist'), 'path': 'favicon.ico'}),
+    
+    # Catch-all for SPA to fix "white blank page" on refresh
+    re_path(r'^(?!api/|admin/|ws/).*$', DashboardPageView.as_view()),
 ]

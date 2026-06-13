@@ -35,7 +35,7 @@ The physical structure of the workspace is organized into three major zones:
 │   ├── package.json                    # Node dependencies and scripts
 │   ├── src/                            # React source code
 │   │   ├── api/                        # Axios instances and API clients
-│   │   ├── components/                 # Reusable UI components (Sidebar, InputBar, MessageBubble)
+│   │   ├── components/                 # Reusable UI components (Sidebar, InputBar, MessageBubble, ErrorBoundary)
 │   │   ├── layouts/                    # Global app layouts (AppLayout)
 │   │   ├── pages/                      # Main route pages (AuthPage, Dashboard, ChatRoom)
 │   │   ├── store/                      # Zustand global state (useAuthStore, useChatStore)
@@ -128,7 +128,7 @@ The physical structure of the workspace is organized into three major zones:
 The frontend is built as a single-page application using React.
 *   `src/store/`: Uses Zustand for lightweight, boilerplate-free global state management (`useAuthStore` for tokens/user data, `useChatStore` for real-time chat history and titles).
 *   `src/pages/`: Main application views. `AuthPage.jsx` handles Login/Registration. `Dashboard.jsx` handles the chat list and empty states. `ChatRoom.jsx` renders active conversations.
-*   `src/components/`: Reusable interface components. `InputBar.jsx` handles text streaming and model selection. `MessageBubble.jsx` renders AI reasoning blocks. `Sidebar.jsx` handles navigation.
+*   `src/components/`: Reusable interface components. `InputBar.jsx` handles text streaming and model selection. `MessageBubble.jsx` renders AI reasoning blocks. `Sidebar.jsx` handles navigation. `ErrorBoundary.jsx` provides fallback rendering on React crashes.
 
 ### 2.2 Django System Core (`backend/core/`)
 This is the root configuration directory of the Django project.

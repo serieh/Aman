@@ -4,39 +4,75 @@ import { useChatStore } from '../store/useChatStore';
 import api from '../api/axios';
 import MessageBubble from '../components/MessageBubble';
 
+const EMPTY_ARRAY = [];
+
 export default function ChatRoom() {
   const { chatId } = useParams();
-  const { messages, setMessages } = useChatStore();
+  const messages = useChatStore(state => state.messagesByChat[String(chatId)] || EMPTY_ARRAY);
+  const setChatMessages = useChatStore(state => state.setChatMessages);
   const scrollRef = useRef(null);
   const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
-  const prevChatIdRef = useRef(null);
 
   // Fetch History when navigating to a real chat
   useEffect(() => {
-    if (!chatId || chatId === 'temp') return;
-    
-    // Only fetch history when switching to a different real chat
-    if (prevChatIdRef.current === chatId) return;
-    prevChatIdRef.current = chatId;
+    let isCancelled = false;
+
+    if (!chatId || chatId === 'temp') {
+      useChatStore.getState().setCurrentChat(null);
+      return;
+    }
+
+    // Set currentChat object from chats or temporary object
+    const currentChat = useChatStore.getState().chats.find(c => String(c.chat_id) === String(chatId));
+    if (currentChat) {
+      useChatStore.getState().setCurrentChat(currentChat);
+    } else {
+      useChatStore.getState().setCurrentChat({ chat_id: chatId });
+    }
 
     const fetchHistory = async () => {
       try {
         const { data } = await api.get(`/chats/${chatId}/`);
-        if (data.messages && data.messages.length > 0) {
-          setMessages(data.messages);
-        }
+        if (isCancelled) return;
+        
+        useChatStore.getState().setCurrentChat(data);
+        
+        // Trust local state if we are currently generating. The websocket will send generation_status: false to unlock it.
+        const isGeneratingDb = data.is_generating;
+        const localIsGenerating = !!useChatStore.getState().isGeneratingByChat[String(chatId)];
+        const isGenerating = isGeneratingDb || localIsGenerating;
+        
+        useChatStore.getState().setIsGeneratingForChat(chatId, isGenerating);
+        
+        const currentMsgs = useChatStore.getState().messagesByChat[String(chatId)] || [];
+        const dbIds = new Set((data.messages || []).map(m => String(m.message_id)));
+        
+        // Filter for messages that exist locally but not yet in the DB (optimistic user/generating assistant messages)
+        const optimisticMsgs = currentMsgs.filter(m => {
+          if (dbIds.has(String(m.message_id))) return false;
+          // Discard AI messages ONLY if we are definitely not generating
+          if (!isGenerating && m.isGenerating) return false;
+          return m.role === 'user' || m.isGenerating;
+        });
+        
+        let newMessages = data.messages && data.messages.length > 0 ? data.messages : [];
+        newMessages = [...newMessages, ...optimisticMsgs];
+        
+        setChatMessages(chatId, newMessages);
       } catch (err) {
-        console.error("Failed to fetch chat history", err);
+        if (!isCancelled) {
+          console.error("Failed to fetch chat history", err);
+        }
       }
     };
     
-    // Only fetch if we don't already have optimistic messages for this chat
-    const currentMsgs = useChatStore.getState().messages;
-    const hasOptimisticMessages = currentMsgs.some(m => m.isGenerating);
-    if (!hasOptimisticMessages) {
-      fetchHistory();
-    }
-  }, [chatId, setMessages]);
+    fetchHistory();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [chatId, setChatMessages]);
+
 
   // Smart Auto-scrolling — triggers on every message change
   useEffect(() => {

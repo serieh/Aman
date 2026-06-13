@@ -1,9 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useChatStore } from '../store/useChatStore';
 import { Heart, Brain, Wind, Lightbulb } from 'lucide-react';
 
 export default function Dashboard() {
   const { setInputMessage, setTriggerSend } = useChatStore();
+
+  useEffect(() => {
+    // Clear current chat state when landing on the dashboard
+    useChatStore.getState().setCurrentChat(null);
+  }, []);
 
   const handleChipClick = (text) => {
     setInputMessage(text);

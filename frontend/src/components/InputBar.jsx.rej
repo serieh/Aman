@@ -1,0 +1,16 @@
+--- frontend/src/components/InputBar.jsx
++++ frontend/src/components/InputBar.jsx
+@@ -14,6 +14,13 @@
+   const formRef = useRef(null);
+   const modelRef = useRef(null);
+   const inputRef = useRef(null);
+ 
++  useEffect(() => {
++    if (triggerSend) {
++      if (formRef.current) formRef.current.requestSubmit();
++      setTriggerSend(false);
++    }
++  }, [triggerSend, setTriggerSend]);
++
+   useEffect(() => {
+     const handleClickOutside = (event) => {

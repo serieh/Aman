@@ -5,8 +5,10 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 
 export default function InputBar({ chatId }) {
-  const { inputMessage, setInputMessage, triggerSend, setTriggerSend, addMessage, model, setModel, messages, setMessages, chats, setChats, setCurrentChat, setGeneratingTitleChatId, updateChatTitle } = useChatStore();
-  const [isGenerating, setIsGenerating] = useState(false);
+  const isGenerating = useChatStore(state => chatId ? !!state.isGeneratingByChat[String(chatId)] : false);
+  const setIsGenerating = (val) => useChatStore.getState().setIsGeneratingForChat(chatId, val);
+  
+  const { inputMessage, setInputMessage, triggerSend, setTriggerSend, model, setModel, chats, setChats, setCurrentChat, setGeneratingTitleChatId, updateChatTitle } = useChatStore();
   const [abortController, setAbortController] = useState(null);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -14,6 +16,12 @@ export default function InputBar({ chatId }) {
   const modelRef = useRef(null);
   const inputRef = useRef(null);
 
+  useEffect(() => {
+    if (triggerSend) {
+      if (formRef.current) formRef.current.requestSubmit();
+      setTriggerSend(false);
+    }
+  }, [triggerSend, setTriggerSend]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -32,6 +40,177 @@ export default function InputBar({ chatId }) {
     }
   };
 
+  const wsRef = useRef(null);
+
+  const connectWs = (targetChatId) => {
+    if (wsRef.current) {
+      if (wsRef.current.chatId === String(targetChatId)) return wsRef.current;
+      wsRef.current.onmessage = null;
+      wsRef.current.onclose = null;
+      wsRef.current.onerror = null;
+      wsRef.current.close();
+    }
+    
+    const token = localStorage.getItem('access');
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${wsProtocol}//${window.location.host}/ws/chat/${targetChatId}/?token=${token}`;
+    const ws = new WebSocket(wsUrl);
+    ws.chatId = String(targetChatId);
+    wsRef.current = ws;
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      
+      if (data.title_update) {
+        updateChatTitle(data.title_update.chat_id, data.title_update.title);
+        useChatStore.getState().setGeneratingTitleChatId(null);
+        return;
+      }
+
+      if (data.generation_status) {
+        const { chat_id, is_generating } = data.generation_status;
+        const currentChats = useChatStore.getState().chats;
+        useChatStore.setState({
+          chats: currentChats.map(c => String(c.chat_id) === String(chat_id) ? { ...c, is_generating } : c)
+        });
+        useChatStore.getState().setIsGeneratingForChat(chat_id, is_generating);
+        return;
+      }
+
+      if (data.user_message) {
+        const currentMessages = useChatStore.getState().messagesByChat[String(targetChatId)] || [];
+        const exists = currentMessages.some(m => 
+          (m.message_id === data.user_message.message_id) || 
+          (data.user_message.client_message_id && m.message_id === data.user_message.client_message_id)
+        );
+        if (!exists) {
+          useChatStore.getState().addChatMessage(targetChatId, {
+            role: 'user',
+            content: data.user_message.content,
+            message_id: data.user_message.message_id
+          });
+        } else {
+          // Update the message ID of the optimistic message to the database ID
+          const updated = currentMessages.map(m => 
+            m.message_id === data.user_message.client_message_id 
+              ? { ...m, message_id: data.user_message.message_id } 
+              : m
+          );
+          useChatStore.getState().setChatMessages(targetChatId, updated);
+        }
+        return;
+      }
+
+      const currentMessages = useChatStore.getState().messagesByChat[String(targetChatId)] || [];
+      const activeAiMsg = currentMessages.find(m => m.isGenerating);
+      const aiMsgId = activeAiMsg ? activeAiMsg.message_id : (data.message_id || 'temp-ai-id');
+
+      // Ensure the assistant message bubble exists if we are receiving chunks/replacement/clear/catchup
+      const hasAiMsg = currentMessages.some(m => m.message_id === aiMsgId);
+      if (!hasAiMsg && (data.chunk || data.replace_all || data.clear || data.catchup)) {
+        useChatStore.getState().addChatMessage(targetChatId, {
+          role: 'assistant',
+          content: '',
+          message_id: aiMsgId,
+          isGenerating: true,
+          timeToFirstToken: null
+        });
+      }
+
+      if (data.catchup) {
+        useChatStore.getState().setIsGeneratingForChat(targetChatId, true);
+        const updated = (useChatStore.getState().messagesByChat[String(targetChatId)] || []).map(m =>
+          m.message_id === aiMsgId ? { ...m, content: data.content, isGenerating: true } : m
+        );
+        useChatStore.getState().setChatMessages(targetChatId, updated);
+        return;
+      }
+
+      if (data.error) {
+        const updated = (useChatStore.getState().messagesByChat[String(targetChatId)] || []).map(m =>
+          m.message_id === aiMsgId ? { ...m, content: `Sorry, something went wrong: ${data.error}`, isGenerating: false } : m
+        );
+        useChatStore.getState().setChatMessages(targetChatId, updated);
+        useChatStore.getState().setIsGeneratingForChat(targetChatId, false);
+        setAbortController(null);
+        return;
+      }
+      
+      if (data.clear) {
+        const updated = (useChatStore.getState().messagesByChat[String(targetChatId)] || []).map(m => 
+          m.message_id === aiMsgId ? { ...m, content: '', timeToFirstToken: null } : m
+        );
+        useChatStore.getState().setChatMessages(targetChatId, updated);
+        return;
+      }
+
+      if (data.replace_all) {
+        const updated = (useChatStore.getState().messagesByChat[String(targetChatId)] || []).map(m => 
+          m.message_id === aiMsgId ? { ...m, content: data.replace_all } : m
+        );
+        useChatStore.getState().setChatMessages(targetChatId, updated);
+        return;
+      } else if (data.chunk) {
+        const currentMessages = useChatStore.getState().messagesByChat[String(targetChatId)] || [];
+        const exists = currentMessages.some(m => m.message_id === data.message_id);
+        
+        let updated;
+        if (exists) {
+          updated = currentMessages.map(m => 
+            m.message_id === data.message_id 
+              ? { ...m, content: m.content + data.chunk, isGenerating: true } 
+              : m
+          );
+        } else {
+          // If we receive a chunk but have no AI message (e.g. in another tab), create it!
+          updated = [...currentMessages, {
+            role: 'assistant',
+            content: data.chunk,
+            message_id: data.message_id,
+            isGenerating: true,
+            startTime: Date.now()
+          }];
+        }
+        useChatStore.getState().setChatMessages(targetChatId, updated);
+      }
+      
+      if (data.done) {
+        const updated = (useChatStore.getState().messagesByChat[String(targetChatId)] || []).map(m => 
+          m.message_id === aiMsgId || m.message_id === data.message_id ? { ...m, isGenerating: false } : m
+        );
+        useChatStore.getState().setChatMessages(targetChatId, updated);
+        useChatStore.getState().setIsGeneratingForChat(targetChatId, false);
+        setAbortController(null);
+      }
+    };
+
+    ws.onerror = () => {
+      // Don't auto-fail generating on error, because backend might still be generating
+    };
+
+    ws.onclose = () => {
+      // Backend handles generation decoupling.
+    };
+
+    return ws;
+  };
+
+  useEffect(() => {
+    if (chatId && chatId !== 'temp') {
+      const nextChat = useChatStore.getState().chats.find(c => String(c.chat_id) === String(chatId));
+      useChatStore.getState().setIsGeneratingForChat(chatId, nextChat ? !!nextChat.is_generating : false);
+      connectWs(chatId);
+    } else {
+      useChatStore.getState().setIsGeneratingForChat(chatId, false);
+    }
+    return () => {
+      if (wsRef.current && wsRef.current.chatId === String(chatId)) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+    };
+  }, [chatId]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!inputMessage.trim() || isGenerating) return;
@@ -40,162 +219,104 @@ export default function InputBar({ chatId }) {
     setInputMessage('');
     
     let activeChatId = chatId;
-    
-    if (!activeChatId || activeChatId === 'temp') {
+    const isTemp = !activeChatId || activeChatId === 'temp';
+    if (isTemp) {
       activeChatId = 'temp';
       navigate(`/app/chat/temp`);
     }
 
-    const userMsg = { role: 'user', content: messageToSend, message_id: Date.now().toString() };
-    addMessage(userMsg);
-    setIsGenerating(true);
+    const generateUUID = () => {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    };
+
+    const clientMsgId = generateUUID();
+    const userMsg = { role: 'user', content: messageToSend, message_id: clientMsgId };
+    
+    useChatStore.getState().addChatMessage(activeChatId, userMsg);
+    useChatStore.getState().setIsGeneratingForChat(activeChatId, true);
+    
+    // Optimistically set generation status in chats list
+    const currentChats = useChatStore.getState().chats;
+    useChatStore.setState({
+      chats: currentChats.map(c => String(c.chat_id) === String(activeChatId) ? { ...c, is_generating: true } : c)
+    });
 
     const controller = new AbortController();
     setAbortController(controller);
 
     try {
-      if (activeChatId === 'temp') {
+      if (isTemp) {
         const { data } = await api.post('/chats/');
-        activeChatId = data.chat_id;
+        activeChatId = String(data.chat_id);
+        
+        // Move messages from 'temp' to activeChatId in the store cache
+        const tempMessages = useChatStore.getState().messagesByChat['temp'] || [];
+        useChatStore.getState().setChatMessages(activeChatId, tempMessages);
+        useChatStore.getState().setChatMessages('temp', []);
+        useChatStore.getState().setIsGeneratingForChat(activeChatId, true);
+        useChatStore.getState().setIsGeneratingForChat('temp', false);
+        
         setChats([data, ...chats]);
         setCurrentChat(data);
         setGeneratingTitleChatId(activeChatId);
         navigate(`/app/chat/${activeChatId}`, { replace: true });
       }
 
-      const aiMsgId = (Date.now() + 1).toString();
-      addMessage({ role: 'assistant', content: '', message_id: aiMsgId, isGenerating: true, timeToFirstToken: null });
+      const aiMsgId = generateUUID();
+      useChatStore.getState().addChatMessage(activeChatId, { 
+        role: 'assistant', 
+        content: '', 
+        message_id: aiMsgId, 
+        isGenerating: true, 
+        timeToFirstToken: null 
+      });
 
-      const startTime = Date.now();
-      let firstTokenReceived = false;
+      const ws = connectWs(activeChatId);
 
-      const token = localStorage.getItem('access');
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${wsProtocol}//${window.location.host}/ws/chat/${activeChatId}/?token=${token}`;
-      
-      const ws = new WebSocket(wsUrl);
-      
-      setAbortController({ abort: () => {
-        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-          ws.close();
-        }
-      }});
-
-      let fullContent = '';
-      let timeToFirstToken = null;
-
-      ws.onopen = () => {
+      const sendPayload = () => {
         ws.send(JSON.stringify({
           message: messageToSend,
+          client_message_id: clientMsgId,
+          ai_message_id: aiMsgId,
           model_preference: model,
           mode: "normal",
         }));
       };
 
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        
-        if (data.error) {
-          ws.close();
-          const currentMessages = useChatStore.getState().messages;
-          setMessages(currentMessages.map(m =>
-            m.message_id === aiMsgId ? { ...m, content: `Sorry, something went wrong: ${data.error}`, isGenerating: false } : m
-          ));
-          setIsGenerating(false);
-          setAbortController(null);
-          return;
-        }
-        
-        if (data.clear) {
-          fullContent = '';
-          firstTokenReceived = false;
-          timeToFirstToken = null;
-          setMessages(useChatStore.getState().messages.map(m => 
-            m.message_id === aiMsgId ? { ...m, content: '', timeToFirstToken: null } : m
-          ));
-          return;
-        }
-
-        if (data.replace_all) {
-          fullContent = data.replace_all;
-          setMessages(useChatStore.getState().messages.map(m => 
-            m.message_id === aiMsgId ? { ...m, content: fullContent } : m
-          ));
-          return;
-        }
-
-        if (data.chunk) {
-          fullContent += data.chunk;
-          if (!firstTokenReceived && fullContent.trim().length > 0) {
-            firstTokenReceived = true;
-            timeToFirstToken = ((Date.now() - startTime) / 1000).toFixed(1);
-          }
-          setMessages(useChatStore.getState().messages.map(m => 
-            m.message_id === aiMsgId ? { ...m, content: fullContent, timeToFirstToken } : m
-          ));
-        }
-        
-        if (data.done) {
-          ws.close();
-          setMessages(useChatStore.getState().messages.map(m => 
-            m.message_id === aiMsgId ? { ...m, content: fullContent, isGenerating: false } : m
-          ));
-
-          const currentGeneratingId = useChatStore.getState().generatingTitleChatId;
-          if (currentGeneratingId === activeChatId) {
-            const pollTitle = async (retries = 6, delay = 2000) => {
-              if (retries <= 0) {
-                useChatStore.getState().setGeneratingTitleChatId(null);
-                return;
-              }
-              try {
-                const { data: chatData } = await api.get(`/chats/${activeChatId}/`);
-                if (chatData.title && chatData.title !== 'Untitled Chat') {
-                  updateChatTitle(activeChatId, chatData.title);
-                } else {
-                  setTimeout(() => pollTitle(retries - 1, delay), delay);
-                }
-              } catch (e) {
-                useChatStore.getState().setGeneratingTitleChatId(null);
-              }
-            };
-            pollTitle();
-          }
-          
-          setIsGenerating(false);
-          setAbortController(null);
-        }
-      };
-
-      ws.onerror = (err) => {
-        const currentMessages = useChatStore.getState().messages;
-        setMessages(currentMessages.map(m =>
-          m.message_id === aiMsgId ? { ...m, content: 'Sorry, connection failed. Please try again.', isGenerating: false } : m
-        ));
-        setIsGenerating(false);
-        setAbortController(null);
-      };
-
-      ws.onclose = () => {
-        if (useChatStore.getState().messages.find(m => m.message_id === aiMsgId)?.isGenerating) {
-            setMessages(useChatStore.getState().messages.map(m => 
-                m.message_id === aiMsgId ? { ...m, isGenerating: false } : m
-            ));
-            setIsGenerating(false);
-            setAbortController(null);
-        }
-      };
+      if (ws.readyState === WebSocket.OPEN) {
+        sendPayload();
+      } else {
+        ws.addEventListener('open', sendPayload, { once: true });
+      }
 
     } catch (err) {
-      setIsGenerating(false);
+      useChatStore.getState().setIsGeneratingForChat(activeChatId, false);
       setAbortController(null);
     }
   };
 
   const handleStop = () => {
-    if (abortController) {
-      abortController.abort();
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ action: "stop" }));
     }
+    useChatStore.getState().setIsGeneratingForChat(chatId, false);
+    
+    // Mark generating message bubble as finalized locally
+    const currentMsgs = useChatStore.getState().messagesByChat[String(chatId)] || [];
+    const updated = currentMsgs.map(m => m.isGenerating ? { ...m, isGenerating: false } : m);
+    useChatStore.getState().setChatMessages(chatId, updated);
+
+    setAbortController(null);
+    const currentChats = useChatStore.getState().chats;
+    useChatStore.setState({
+      chats: currentChats.map(c => String(c.chat_id) === String(chatId) ? { ...c, is_generating: false } : c)
+    });
   };
 
   const models = [
