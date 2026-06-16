@@ -31,6 +31,7 @@ The database relies on a cascading relationship structure. Deleting a user purge
                   | chat_id (PK)         : UUID       |
                   | id (FK -> users)     : UUID       | <-- Column name is "id"
                   | title                : VARCHAR    |
+                  | persona_id           : VARCHAR    | -- e.g. 'aman', 'tariq', 'layla'
                   | creation_date        : TIMESTAMPTZ|
                   | modify_date          : TIMESTAMPTZ|
                   +-----------------------------------+
@@ -82,6 +83,7 @@ The database relies on a cascading relationship structure. Deleting a user purge
         chat_id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         id              UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, -- User FK column
         title           VARCHAR(255) NULL,
+        persona_id      VARCHAR(50) NOT NULL DEFAULT 'aman',
         creation_date   TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
         modify_date     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
     );

@@ -88,6 +88,7 @@ urlpatterns = [
 
     # API
     path("api/v1/chats/",                        views.ChatListView.as_view()),
+    path("api/v1/personas/",                     views.PersonaListView.as_view()),
     path("api/v1/chats/<uuid:chat_id>/",          views.ChatDetailView.as_view()),
     path("api/v1/chats/<uuid:chat_id>/message/",  views.MessageView.as_view()),
 ]
@@ -110,7 +111,8 @@ All REST endpoints operate on JSON requests/responses and are standardized under
 | **Profile API** | `DELETE` | `/api/v1/users/me/` | `UserMeView` | Completely deletes user account (cascades all data) |
 | **Profile API** | `POST` | `/api/v1/users/change-password/` | `ChangePasswordView` | Changes user password |
 | **Chat REST API** | `GET` | `/api/v1/chats/` | `ChatListView` | Lists active user chats (ordered by most recent modification) |
-| **Chat REST API** | `POST` | `/api/v1/chats/` | `ChatListView` | Creates a new empty chat session |
+| **Chat REST API** | `POST` | `/api/v1/chats/` | `ChatListView` | Creates a new chat session (optionally accepts `persona_id`) |
+| **Chat REST API** | `GET` | `/api/v1/personas/` | `PersonaListView` | Lists all available AI personas/companions |
 | **Chat REST API** | `DELETE` | `/api/v1/chats/history/` | `DeleteHistoryView` | Deletes all of the user's chat history and wipes long-term memory |
 | **Chat REST API** | `DELETE` | `/api/v1/chats/memory/` | `DeleteMemoryView` | Wipes long-term memory while keeping chat history intact |
 | **Chat REST API** | `GET` | `/api/v1/chats/<uuid:chat_id>/` | `ChatDetailView` | Fetches chat title and all active messages |
@@ -265,14 +267,52 @@ All REST endpoints operate on JSON requests/responses and are standardized under
 *   **Method**: `POST`
 *   **Path**: `/api/v1/chats/`
 *   **Access**: `IsAuthenticated`
+*   **Request Body (`application/json`)**:
+    ```json
+    {
+      "persona_id": "tariq"
+    }
+    ```
+    *   `persona_id` (optional, default: `"aman"`): The ID of the persona to converse with. Available personas can be fetched via the `/api/v1/personas/` endpoint.
 *   **Success Response (`201 Created`)**:
     ```json
     {
       "chat_id": "8cbe675a-a309-411a-bb10-911cb75949e2",
       "title": null,
+      "persona_id": "tariq",
       "creation_date": "2026-05-21T22:15:00Z",
       "modify_date": "2026-05-21T22:15:00Z"
     }
+    ```
+
+### 5.2b List Personas
+*   **Method**: `GET`
+*   **Path**: `/api/v1/personas/`
+*   **Access**: `IsAuthenticated`
+*   **Success Response (`200 OK`)**:
+    ```json
+    [
+      {
+        "id": "aman",
+        "name": "أمان",
+        "gender": "female",
+        "description": "Warm, lovely, and emotionally intelligent companion...",
+        "traits": "compassionate listener...",
+        "role": "supportive companion...",
+        "accent": "Syrian Levantine",
+        "arabic_dialect": "Levantine Arabic (Syrian)"
+      },
+      {
+        "id": "tariq",
+        "name": "طارق",
+        "gender": "male",
+        "description": "Calm, structured, and logical wellness guide...",
+        "traits": "grounded counselor...",
+        "role": "logical advisor...",
+        "accent": "Jordanian Levantine",
+        "arabic_dialect": "Levantine Arabic (Jordanian)"
+      }
+    ]
     ```
 
 ### 5.3 Get Chat Details & Messages
