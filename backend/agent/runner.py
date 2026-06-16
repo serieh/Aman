@@ -94,6 +94,13 @@ def _get_user_context(user_id: str):
     except Exception:
         return ""
 
+def _get_chat_persona(chat_id: str):
+    close_old_connections()
+    try:
+        return Chat.objects.get(chat_id=chat_id).persona_id
+    except Chat.DoesNotExist:
+        return "aman"
+
 
 def _check_chat_title(chat_id: str, user_message: str, user_id: str):
     close_old_connections()
@@ -137,18 +144,24 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
                 with timed_operation("emotion_flag_history", chat_id=chat_id):
                     return _fetch_emotion_and_flags_history(chat_id)
 
+            def _timed_get_persona():
+                with timed_operation("persona_fetch", chat_id=chat_id):
+                    return _get_chat_persona(chat_id)
+
             (
                 history,
                 emotion,
                 safety,
                 user_context,
-                (emotion_history, flag_history)
+                (emotion_history, flag_history),
+                persona_id
             ) = await asyncio.gather(
                 asyncio.to_thread(_timed_load_history),
                 asyncio.to_thread(_timed_estimate_emotion),
                 asyncio.to_thread(_timed_input_safety),
                 asyncio.to_thread(_timed_user_context),
-                asyncio.to_thread(_timed_emotion_flag_history)
+                asyncio.to_thread(_timed_emotion_flag_history),
+                asyncio.to_thread(_timed_get_persona)
             )
 
             safety_tier = safety.get("safety_tier")
@@ -162,6 +175,7 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
                 grey_area_categories=category_hints,
                 user_context=user_context,
                 mode=mode,
+                persona_id=persona_id,
                 emotion_history=emotion_history,
                 flag_history=flag_history,
             )

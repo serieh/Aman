@@ -53,14 +53,17 @@ def signal_handler(sig, frame):
     print(f"🎮 GPU Usage  | Average: {sum(gpu_usages)/len(gpu_usages):6.2f}%  | Peak: {max(gpu_usages):6.2f}%")
     print(f"🗄️  VRAM Usage | Average: {sum(vram_usages)/len(vram_usages):6.2f} GB | Peak: {max(vram_usages):6.2f} GB")
     print("-" * 55)
-    print(f"✅ Full raw dataset saved to: hardware_metrics.csv")
+    print(f"✅ Full raw dataset saved to: results/hardware_metrics.csv")
     print("You can open this CSV file in Excel to generate graphs for your report!\n")
     sys.exit(0)
 
 signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 
 def main():
-    csv_file = "hardware_metrics.csv"
+    import os
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    csv_file = os.path.join(script_dir, "results", "hardware_metrics.csv")
     
     print("🚀 Starting Aman System Profiler...")
     print(f"📝 Logging metrics to '{csv_file}' every 2 seconds.")

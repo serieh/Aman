@@ -316,3 +316,4 @@ get_console_errors.js
 test_db.py
 get_errors.py
 test_trigger.patch
+.agents

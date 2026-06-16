@@ -252,7 +252,9 @@ export default function InputBar({ chatId }) {
 
     try {
       if (isTemp) {
-        const { data } = await api.post('/chats/');
+        const { data } = await api.post('/chats/', {
+          persona_id: useChatStore.getState().selectedPersonaId
+        });
         activeChatId = String(data.chat_id);
         
         // Move messages from 'temp' to activeChatId in the store cache

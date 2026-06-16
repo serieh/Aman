@@ -10,7 +10,11 @@ export const useChatStore = create((set) => ({
   inputMessage: '',
   triggerSend: false,
   generatingTitleChatId: null, // Track which chat is waiting for a title
+  selectedPersonaId: 'aman',
+  personas: [],
   
+  setSelectedPersonaId: (id) => set({ selectedPersonaId: id }),
+  setPersonas: (personas) => set({ personas }),
   setInputMessage: (inputMessage) => set({ inputMessage }),
   setTriggerSend: (triggerSend) => set({ triggerSend }),
   setChats: (chats) => set({ chats }),

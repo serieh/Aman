@@ -4,16 +4,35 @@ G'day! Welcome to **Aman**. This project is a bilingual (Arabic-English) emotion
 
 ## Purpose
 
-Aman aims to be a virtual shoulder to lean on. It's not a doctor (don't go asking it to prescribe you anything, mate!), but it provides factually grounded, culturally sensitive support, particularly tailored for the Arab and Islamic world. It uses an advanced RAG (Retrieval-Augmented Generation) pipeline and local AI models to keep conversations private, fast, and empathetic.
+Aman aims to be a virtual shoulder to lean on. It's not a doctor (don't go asking it to prescribe you anything, mate!), but it provides factually grounded, culturally sensitive support, particularly tailored for the Arab world. It uses an advanced RAG (Retrieval-Augmented Generation) pipeline and local AI models to keep conversations private, fast, and empathetic.
+
+## Key Features
+
+- **Arab Cultural Alignment**: The agent is aligned with Arab cultural norms and Levantine dialects, providing sensitive guidance reframed around cultural values instead of specific religious frameworks.
+- **Modular Companions**: Rather than a single character, users can converse with multiple distinct companions, each with unique traits, genders, accents, and Levantine dialects:
+  - **Aman**: A warm, lovely, and emotionally intelligent female companion (Syrian accent).
+  - **Tariq**: A calm, structured, and logical male companion (Jordanian accent).
+  - **Layla**: A friendly, deeply empathetic female companion who focuses on listening (Palestinian accent).
+- **Companion Selection UI**: A clean companion selector modal presented to the user when creating a new chat session, allowing full flexibility.
+
+## How it Works
+
+The Aman agent architecture operates via a multi-tiered pipeline:
+1. **Persona Assembly**: Upon chat creation, the selected `persona_id` dynamically loads specific behavioral, linguistic, and dialect guidelines from the persona registry.
+2. **PII Masking & Emotion Analysis**: User input is screened for PII, and the user's emotional state is classified using the `AnasAlokla/multilingual_go_emotions` model.
+3. **Safety Firewall**: A dual-layer gate (local keyword matching and a Sentence-Transformer semantic check in Qdrant) flags high-risk crisis inputs.
+4. **Clinical Grounding (RAG)**: If clinical context is required, Qdrant is queried to retrieve relevant therapeutic guidelines.
+5. **Prompt Construction**: A 5-layer prompt (Core Persona + Safety + Cultural + RAG Tools + Dynamic Emotion/History) is built and dispatched to the LLM.
+6. **Streaming Response**: The response is streamed token-by-token back to the frontend client over WebSockets (Django Channels).
 
 ## Requirements
 
 To get this beauty up and running, you'll need the following installed on your rig:
 
-- **Docker** and **Docker Compose** (for spinning up the databases without the headache)
-- **Node.js** (v18+) and **npm** (for the frontend magic)
-- **Python** (v3.10+) and **uv** (the blazingly fast Python package installer)
-- **Ollama** (running locally to serve up the AI models)
+- **Docker** and **Docker Compose** (for spinning up PostgreSQL & Qdrant)
+- **Node.js** (v18+) and **npm** (for the frontend React app)
+- **Python** (v3.12+) and **uv** (the Python package manager used to run the backend and tests)
+- **Ollama** (optional, for local model fallbacks)
 
 ## Dependencies
 
@@ -69,6 +88,7 @@ This project wouldn't be possible without some fair dinkum amazing open-source t
   - [Gemma 4:e2b](https://ai.google.dev/gemma) via Ollama (for fast local utilities and fallback)
   - [Groq](https://groq.com/) using `openai/gpt-oss-120b` for deep emotional reasoning
   - [BAAI/bge-m3](https://huggingface.co/BAAI/bge-m3) for embeddings
+  - [AnasAlokla/multilingual_go_emotions](https://huggingface.co/AnasAlokla/multilingual_go_emotions) for local multilingual emotion classification
 - **Core Frameworks:** [Django](https://www.djangoproject.com/), [React](https://react.dev/), [Vite](https://vitejs.dev/)
 - **AI Tooling:** [LangChain](https://langchain.com/) and [Ollama](https://ollama.com/)
 - **Vector DB:** [Qdrant](https://qdrant.tech/)

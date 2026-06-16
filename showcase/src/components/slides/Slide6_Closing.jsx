@@ -8,7 +8,7 @@ export default function Slide6_Closing() {
           Thank You
         </h1>
         <p className="text-xl md:text-2xl text-slate-500 font-medium animate-pulse mt-8">
-          Aman - AI-Powered Emotional Wellness
+          Aman AI - Multimodal Arabic Mental Health Companion
         </p>
       </div>
     </div>

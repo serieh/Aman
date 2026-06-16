@@ -34,8 +34,15 @@ class ChatListView(APIView):
         return Response(ChatSerializer(chats, many=True).data)
 
     def post(self, request):
-        chat = Chat.objects.create(user=request.user)
+        persona_id = request.data.get("persona_id", "aman")
+        chat = Chat.objects.create(user=request.user, persona_id=persona_id)
         return Response(ChatSerializer(chat).data, status=status.HTTP_201_CREATED)
+
+class PersonaListView(APIView):
+    def get(self, request):
+        from agent.prompts.personas import PERSONAS
+        personas_list = list(PERSONAS.values())
+        return Response(personas_list)
 
 
 class ChatDetailView(APIView):

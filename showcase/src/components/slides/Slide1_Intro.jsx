@@ -34,7 +34,7 @@ export default function Slide1_Intro() {
             <div className="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center flex-shrink-0 text-rose-600 dark:text-rose-400 font-bold text-xl animate-pulse">3</div>
             <div>
               <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Clinical Framework</h3>
-              <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">Structurally integrates evidence-based Cognitive Behavioral Therapy (CBT) techniques with Islamic psychological frameworks.</p>
+              <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-sm">Structurally integrates evidence-based Cognitive Behavioral Therapy (CBT) techniques with Arab cultural frameworks.</p>
             </div>
           </div>
 

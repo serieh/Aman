@@ -10,10 +10,11 @@ export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
   const location = useLocation();
   const chatId = location.pathname.split('/chat/')[1] || null;
   const logout = useAuthStore(state => state.logout);
-  const { chats, setChats, updateChatTitle, removeChat, generatingTitleChatId } = useChatStore();
+  const { chats, setChats, updateChatTitle, removeChat, generatingTitleChatId, personas, setPersonas, setSelectedPersonaId } = useChatStore();
 
   const [editingChatId, setEditingChatId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
+  const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchChats = async () => {
@@ -24,10 +25,25 @@ export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
         console.error("Failed to fetch chats", err);
       }
     };
+    const fetchPersonas = async () => {
+      try {
+        const { data } = await api.get('/personas/');
+        setPersonas(data);
+      } catch (err) {
+        console.error("Failed to fetch personas", err);
+      }
+    };
     fetchChats();
-  }, [setChats]);
+    fetchPersonas();
+  }, [setChats, setPersonas]);
 
   const handleNewChat = () => {
+    setIsPersonaModalOpen(true);
+  };
+
+  const handlePersonaSelect = (personaId) => {
+    setSelectedPersonaId(personaId);
+    setIsPersonaModalOpen(false);
     navigate('/app');
     if (window.innerWidth < 768) setIsOpen(false);
   };
@@ -80,6 +96,45 @@ export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
   
   return (
     <>
+      {/* Persona Selection Modal */}
+      {isPersonaModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-2xl w-full border border-slate-200 dark:border-slate-800 shadow-2xl relative">
+            <button 
+              onClick={() => setIsPersonaModalOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">Choose your Companion</h2>
+            <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm">Select the AI personality you'd like to talk to.</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {personas.map(persona => (
+                <button
+                  key={persona.id}
+                  onClick={() => handlePersonaSelect(persona.id)}
+                  className="flex flex-col items-start p-5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-aman-primary/50 dark:hover:border-aman-primary/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all text-left group"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-xl bg-aman-primary/10 flex items-center justify-center text-aman-primary font-bold text-xl uppercase">
+                      {persona.name.charAt(0)}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-800 dark:text-white text-lg group-hover:text-aman-primary transition-colors">{persona.name}</h3>
+                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{persona.gender}</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-4 flex-1">
+                    {persona.description}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Backdrop */}
       {isOpen && (
         <div 

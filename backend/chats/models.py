@@ -7,6 +7,7 @@ class Chat(models.Model):
     chat_id       = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user          = models.ForeignKey(User, on_delete=models.CASCADE, db_column="id")
     title         = models.CharField(max_length=255, blank=True, null=True)
+    persona_id    = models.CharField(max_length=50, default="aman")
     creation_date = models.DateTimeField(auto_now_add=True)
     modify_date   = models.DateTimeField(auto_now=True)
 

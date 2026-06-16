@@ -36,10 +36,10 @@ export default function LandingPage() {
       <main className="flex-1 flex flex-col items-center justify-center p-6 text-center z-10">
         <div className="max-w-4xl mx-auto space-y-8 animate-in slide-in-from-bottom-6 fade-in duration-700">
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-slate-900 leading-[1.1]">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-aman-primary to-aman-tertiary">Aman</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-aman-primary to-aman-tertiary">Aman AI</span>
           </h1>
           <h2 className="text-2xl md:text-3xl text-slate-700 font-semibold max-w-3xl mx-auto leading-relaxed">
-            An AI-Powered Bilingual Emotional Wellness Support Agent
+            The Multimodal Arabic Mental Health Companion
           </h2>
           
           <div className="py-8 space-y-4">
