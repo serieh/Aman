@@ -4,7 +4,7 @@ import django
 import asyncio
 
 # Setup Django path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../Backend')))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 django.setup()
 

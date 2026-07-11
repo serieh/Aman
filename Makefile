@@ -1,30 +1,30 @@
-.PHONY: dev dev-test dev-ollama backend backend-ollama frontend up down showcase test
+.PHONY: dev dev-test dev-ollama Backend Backend-ollama Frontend up down showcase test
 
 dev:
 	@echo "Starting development stack (cloud-only, no Ollama)..."
 	docker compose up -d
-	$(MAKE) -j 2 backend frontend
+	$(MAKE) -j 2 Backend Frontend
 
 dev-ollama:
 	@echo "Starting development stack with Ollama enabled..."
 	$(MAKE) up
-	$(MAKE) -j 2 backend-ollama frontend
+	$(MAKE) -j 2 Backend-ollama Frontend
 
-backend:
+Backend:
 	@echo "Starting Backend (cloud-only)..."
-	cd backend && uv sync && \
+	cd Backend && uv sync && \
 		AMAN_USE_OLLAMA=0 uv run python manage.py migrate && \
 		AMAN_USE_OLLAMA=0 uv run daphne -b 127.0.0.1 -p 8000 core.asgi:application
 
-backend-ollama:
+Backend-ollama:
 	@echo "Starting Backend (Ollama enabled)..."
-	cd backend && uv sync && \
+	cd Backend && uv sync && \
 		AMAN_USE_OLLAMA=1 uv run python manage.py migrate && \
 		AMAN_USE_OLLAMA=1 uv run daphne -b 127.0.0.1 -p 8000 core.asgi:application
 
-frontend:
+Frontend:
 	@echo "Starting Frontend..."
-	cd frontend && npm install && NODE_OPTIONS="--no-warnings" npm run dev
+	cd Frontend && npm install && NODE_OPTIONS="--no-warnings" npm run dev
 
 up:
 	@echo "Starting Docker containers and Ollama server..."

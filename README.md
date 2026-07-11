@@ -13,7 +13,7 @@ Aman aims to be a virtual shoulder to lean on. It's not a doctor (don't go askin
   - **Aman**: A warm, lovely, and emotionally intelligent female companion (Syrian accent).
   - **Tariq**: A calm, structured, and logical male companion (Jordanian accent).
   - **Layla**: A friendly, deeply empathetic female companion who focuses on listening (Palestinian accent).
-- **Companion Selection UI**: A clean companion selector modal presented to the user when creating a new chat session, allowing full flexibility.
+- **Companion Selection UI**: A flexible dropdown selector in the message bar allows changing companions mid-chat, integrated alongside a two-step registration flow that lets users pick their default companion upon account creation.
 
 ## How it Works
 
@@ -38,8 +38,8 @@ To get this beauty up and running, you'll need the following installed on your r
 
 Aman is built on the shoulders of giants. Here's what's powering it under the hood:
 
-- **Backend:** Django, Django REST Framework, Channels (WebSockets for real-time chat)
-- **Frontend:** React + Vite (for that snappy UI)
+- **Backend:** Django, Django REST Framework, Channels (WebSockets for real-time chat) in the `Backend/` directory
+- **Frontend:** React + Vite (for that snappy UI) in the `Frontend/` directory
 - **AI & Data:** LangChain, LangGraph, Sentence-Transformers, HuggingFace
 - **Databases:** PostgreSQL (relational data) and Qdrant (vector storage for RAG and long-term memory)
 
@@ -48,11 +48,11 @@ Aman is built on the shoulders of giants. Here's what's powering it under the ho
 Forget typing out twenty different commands. We've got a `Makefile` that does the heavy lifting for you:
 
 ### 1. Configure Environment Variables
-Before running the application, set up your environment variables. Copy the `.env.example` file in the `backend/` directory to `.env`:
+Before running the application, set up your environment variables. Copy the `.env.example` file in the root directory to `.env`:
 ```bash
-cp backend/.env.example backend/.env
+cp .env.example .env
 ```
-Open `backend/.env` and fill in your keys (e.g., `GROQ_API_KEY`, `SECRET_KEY`, etc.).
+Open `.env` and fill in your keys (e.g., `GROQ_API_KEY`, `SECRET_KEY`, etc.).
 
 ### 2. Run the Stack
 

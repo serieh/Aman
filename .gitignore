@@ -304,11 +304,11 @@ testing_only/
 Logs/
 Remember.txt
 extra/
-backend/test.py
-backend/test_runner.py
-backend/test_groq.py
-backend/test_embeddings.py
-backend/add_mock_chats.py
+Backend/test.py
+Backend/test_runner.py
+Backend/test_groq.py
+Backend/test_embeddings.py
+Backend/add_mock_chats.py
 Documentations/
 Test/
 generate_report.py
@@ -317,3 +317,5 @@ test_db.py
 get_errors.py
 test_trigger.patch
 .agents
+.claude
+Moudles/

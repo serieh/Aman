@@ -17,15 +17,15 @@ Aman AI achieves near real-time response times with an overall average latency o
 *Visual reference: Figure 7. Latency breakdown (in milliseconds) across core pipeline operations.*
 
 ### Hardware Resource Utilization Profile
-Local hardware profiling demonstrates that the hybrid architecture runs efficiently within standard consumer hardware limits, peaking at 6.24 GB VRAM.
+Local hardware profiling demonstrates that the hybrid architecture runs efficiently within standard consumer hardware limits, peaking at 1.62 GB VRAM.
 
 #### Table 6. Hardware Resource Utilization Profile
 | Metric | Average | Session Peak | Performance Analysis |
 |---|:---:|:---:|---|
-| **CPU Usage (%)** | 0.0320 | 1.0000 | Minimal overhead; active during local embedding tokenization. |
-| **RAM Allocation (GB)** | 9.10 GB | 9.32 GB | Stable allocation; background summarization daemon runs without leaks. |
-| **GPU Utilization (%)** | 0.0050 | 0.0900 | Low utilization; active during Sentence-Transformer vector calculations. |
-| **VRAM Allocation (GB)** | 5.71 GB | 6.24 GB | Fits easily inside the 6GB VRAM limit, supporting concurrent chats. |
+| **CPU Usage (%)** | 0.1288 | 0.1970 | Minimal overhead; active during local embedding tokenization. |
+| **RAM Allocation (GB)** | 7.72 GB | 7.99 GB | Stable allocation; background summarization daemon runs without leaks. |
+| **GPU Utilization (%)** | 0.0422 | 0.1000 | Low utilization; active during Sentence-Transformer vector calculations. |
+| **VRAM Allocation (GB)** | 0.99 GB | 1.62 GB | Fits easily inside the 6GB VRAM limit, supporting concurrent chats. |
 
 *Visual reference: Figure 8. CPU, RAM, GPU, and VRAM utilization trends over test timeline.*
 
