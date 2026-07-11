@@ -17,15 +17,15 @@ Aman AI achieves near real-time response times with an overall average latency o
 *Visual reference: Figure 7. Latency breakdown (in milliseconds) across core pipeline operations.*
 
 ### Hardware Resource Utilization Profile
-Local hardware profiling demonstrates that the hybrid architecture runs efficiently within standard consumer hardware limits, peaking at 1.62 GB VRAM.
+Local hardware profiling demonstrates that the hybrid architecture runs efficiently within standard consumer hardware limits, peaking at 4.08 GB VRAM.
 
 #### Table 6. Hardware Resource Utilization Profile
 | Metric | Average | Session Peak | Performance Analysis |
 |---|:---:|:---:|---|
-| **CPU Usage (%)** | 0.1288 | 0.1970 | Minimal overhead; active during local embedding tokenization. |
-| **RAM Allocation (GB)** | 7.72 GB | 7.99 GB | Stable allocation; background summarization daemon runs without leaks. |
-| **GPU Utilization (%)** | 0.0422 | 0.1000 | Low utilization; active during Sentence-Transformer vector calculations. |
-| **VRAM Allocation (GB)** | 0.99 GB | 1.62 GB | Fits easily inside the 6GB VRAM limit, supporting concurrent chats. |
+| **CPU Usage (%)** | 0.0739 | 0.2150 | Minimal overhead; active during local embedding tokenization. |
+| **RAM Allocation (GB)** | 10.04 GB | 10.35 GB | Stable allocation; background summarization daemon runs without leaks. |
+| **GPU Utilization (%)** | 0.0668 | 0.2300 | Low utilization; active during Sentence-Transformer vector calculations. |
+| **VRAM Allocation (GB)** | 3.80 GB | 4.08 GB | Fits easily inside the 6GB VRAM limit, supporting concurrent chats. |
 
 *Visual reference: Figure 8. CPU, RAM, GPU, and VRAM utilization trends over test timeline.*
 
@@ -56,13 +56,27 @@ Document the necessity of components using these direct comparisons:
 * **With RAG (Full System)**:
   > تشمل العلاجات الموصى بها لاضطراب فرط الحركة وتشتت الانتباه (ADHD) الدعم السلوكي والعلاجات السلوكية المعرفية للأطفال، إلى جانب التدريب العملي للوالدين والمعلمين. وفقاً للبيانات الطبية، يُنصح بالتدخلات السلوكية أولاً قبل اللجوء للمهدئات الدوائية...
 * **Without RAG (Retrieval Disabled)**:
-  > اضطراب فرط الحركة وتشتت الانتباه (ADHD) عادةً يُدار بمجموعة من الطرق اللي بتكمل بعضها. كثير من الأشخاص بيستفيدوا من الأدوية المنشطة زي ميثيلفينيديت أو أمفيتامينات، لأنها بتساعد على تحسين التركيز وتقليل النشاط الزايد. إذا ما كان الدواء مناسب أو في حساسية منه، فيه أدوية غير منشطة مثل أتوموكستين أو غوانفاسين ممكن تكون بديل مفيد.
+  > علاج اضطراب فرط الحركة وتشتت الانتباه (ADHD) يتضمن عدة أوجه، بما في ذلك العلاج النفسي، والعلاج بالدواء، والتغذية الصحية، والتدريب على مهارات الحياة، والاستراحة. علاج ADHD هو أمر شديد الأهمية لتحسين جودة الحياة وتخفيف أعراض المتعلقين بالاضطراب.
 
-غير العلاج الدوائي، التدخل السلوكي بيلعب دور كبير. جلسات العلاج السلوكي المعرفي (CBT) أو التدريب السلوكي بتعلم استراتيجيات لتنظيم الوقت، تنظيم المهام، وتقوية مهارات التحكم بالذات. بالنسبة للأطفال، تدريب الأهل والمعلمين على كيفية التعامل مع السلوكيات وتوفير بيئة منظمة في البيت والمدرسة بيفرق كثير.
+علاج نفسي:
+- العلاج النفسي هو مساعدة المريض في تحسين مهارات التوجيه الذاتي، وتحسين مهارات التعامل مع الإجهاد، وتحسين التواصل مع الآخرين.
+- يمكن أن يأخذ العلاج النفسي شكل الحوار مع معالج، أو العلاج بالفريق، أو العلاج بالتناوب بين الحوار والأنشطة.
 
-كمان العادات اليومية إلها تأثير واضح: النوم الكافي، ممارسة الرياضة بانتظام، وتغذية متوازنة (تقليل السكريات والكافيين) بيقللوا من الأعراض. بعض الناس بيستفيدوا من تقنيات الاسترخاء أو التأمل البسيط لتقليل القلق المصاحب.
+علاج بالدواء:
+- الستيرويدات المسكنة للآلام أو الستيرويدات الهرباوية قد تكون مفيدة في بعض الأحيان.
+- بعض الأدوية يمكن أن تساعد في تقليل الأعراض، مثل سيمبتومين، أو الميثيل فينيدات، أو الستيرويدات الهرباوية.
 
-إذا حابب تعرف أكتر عن أي من هالخيارات أو تشوف إيش الأنسب لحالتك أو لحالة أحد أفراد عائلتك، خبرني وسأساعدك ترتب الخطوات بطريقة تناسبك.
+التغذية الصحية:
+- الأطعمة الغنية بالزيت النباتي، والمغذية بالفيتامينات، والمعادن، والبروتينات، والفيتامينات قد تكون مفيدة في تقليل الأعراض.
+- يجب تجنب التغذية المقلصة، أو التي تحتوي على الكحول، أو التي تحتوي على الكافيين.
+
+تدريب على مهارات الحياة:
+- التدريب على مهارات الحياة هو مساعدة المريض في تحسين مهارات الحياة اليومية، مثل تنظيم الوقت، والتنظيم الالكتروني، والحفاظ على التركيز.
+
+الاستراحة:
+- الاستراحة هي أمر مهم في علاج ADHD. يجب أن يأخذ المريض فترات استراحة قصيرة، مثل قضاء بعض الوقت في الهواء الطلق، أو قضاء بعض الوقت في النوم.
+
+علاج ADHD هو أمر شديد الأهمية لتحسين جودة الحياة وتخفيف أعراض المتعلقين بالاضطراب.
 
 #### Ablation Analysis
 Without RAG, the LLM hallucinates and recommends specific pharmaceutical stimulants, explicitly violating clinical safety parameters. With RAG enabled, the system provides safe, non-medicinal behavioral support guidelines derived directly from the trusted therapeutic corpus.
@@ -72,7 +86,7 @@ Without RAG, the LLM hallucinates and recommends specific pharmaceutical stimula
 * **With Memory (Full System)**:
   > أخوك اسمه رامي، وهو ساكن في القاهرة.
 * **Without Memory (Retrieval Disabled)**:
-  > ما بتذكر اسم أخوك من قبل، بس إذا حابب تحكيلي مرة تانية أنا جاهزة أسمعه. كيف فيني أساعدك اليوم؟
+  > لا أستطيع الحصول على معلومات عن أخويك. أريدك أكون أكثر وضوحًا في سؤالك. كيف ممكن أساعدك؟لا زعلانة إنك تذكرها. مش حابب أتذكرش. ممكن ترجعلي بعض المعلومات عن الأخوي, واخدلي بعض الوقت لتفكرش في نفسك وحدك.
 
 #### Ablation Analysis
 Disabling the vector-based memory retrieval array completely fractures personalization logic and continuity between session boundaries, actively degrading the therapeutic alliance.

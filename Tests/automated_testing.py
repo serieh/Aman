@@ -16,7 +16,7 @@ from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage
 
 # We use a Groq cloud model for the simulator to allow fast concurrent testing without a local Ollama daemon
-user_simulator = ChatGroq(model="openai/gpt-oss-120b", temperature=0.8)
+user_simulator = ChatGroq(model="llama-3.1-8b-instant", temperature=0.8)
 
 def get_base_desc(persona_name, persona_age, persona_country, persona_traits):
     return (

@@ -29,7 +29,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     creation_date = models.DateTimeField(auto_now_add=True)
 
     # Preferences
-    theme = models.CharField(max_length=10, default="light")
+    theme = models.CharField(max_length=50, default="sunrise-light")
     language = models.CharField(max_length=10, default="en")
     default_persona_id = models.CharField(max_length=50, default="aman")
 

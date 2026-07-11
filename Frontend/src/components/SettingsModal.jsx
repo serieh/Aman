@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useChatStore } from '../store/useChatStore';
 import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
+import { applyTheme } from '../utils/theme';
 
 export default function SettingsModal({ onClose }) {
   const [activeTab, setActiveTab] = useState('Account');
@@ -11,6 +12,34 @@ export default function SettingsModal({ onClose }) {
   const { setChats, setMessages, setCurrentChat } = useChatStore();
   const { personas } = useChatStore();
   const navigate = useNavigate();
+
+  const parseTheme = (themeStr) => {
+    const val = themeStr || 'sunrise-light';
+    const parts = val.split('-');
+    return {
+      name: parts[0] || 'sunrise',
+      mode: parts[1] || 'light'
+    };
+  };
+
+  const initialParsed = parseTheme(user?.theme);
+  const [selectedTheme, setSelectedTheme] = useState(initialParsed.name);
+  const [selectedMode, setSelectedMode] = useState(initialParsed.mode);
+
+  // Preview theme changes dynamically
+  useEffect(() => {
+    applyTheme(`${selectedTheme}-${selectedMode}`);
+  }, [selectedTheme, selectedMode]);
+
+  // Revert back to original saved theme on unmount if not saved
+  useEffect(() => {
+    return () => {
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser?.theme) {
+        applyTheme(currentUser.theme);
+      }
+    };
+  }, []);
 
   // Form States
   const [accountData, setAccountData] = useState({
@@ -20,7 +49,7 @@ export default function SettingsModal({ onClose }) {
     country: user?.country || 'US'
   });
   const [prefsData, setPrefsData] = useState({
-    theme: user?.theme || 'light',
+    theme: user?.theme || 'sunrise-light',
     language: user?.language || 'en',
     default_persona_id: user?.default_persona_id || 'aman'
   });
@@ -43,10 +72,13 @@ export default function SettingsModal({ onClose }) {
         country: user.country || 'US'
       });
       setPrefsData({
-        theme: user.theme || 'light',
+        theme: user.theme || 'sunrise-light',
         language: user.language || 'en',
         default_persona_id: user.default_persona_id || 'aman'
       });
+      const parsed = parseTheme(user.theme);
+      setSelectedTheme(parsed.name);
+      setSelectedMode(parsed.mode);
     }
   }, [user]);
 
@@ -54,14 +86,6 @@ export default function SettingsModal({ onClose }) {
   const handleAccountChange = (e) => setAccountData({ ...accountData, [e.target.name]: e.target.value });
   const handlePrefsChange = (e) => setPrefsData({ ...prefsData, [e.target.name]: e.target.value });
   const handleSecurityChange = (e) => setSecurityData({ ...securityData, [e.target.name]: e.target.value });
-
-  const applyTheme = (themeStr) => {
-    if (themeStr === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
 
   const handleSaveAccount = async () => {
     setLoading(true); setMessage(null);
@@ -79,7 +103,11 @@ export default function SettingsModal({ onClose }) {
   const handleSavePrefs = async () => {
     setLoading(true); setMessage(null);
     try {
-      const { data } = await api.put('/users/me/', prefsData);
+      const payload = {
+        ...prefsData,
+        theme: `${selectedTheme}-${selectedMode}`
+      };
+      const { data } = await api.put('/users/me/', payload);
       updateUser(data);
       applyTheme(data.theme);
       setMessage({ type: 'success', text: 'Preferences updated successfully.' });
@@ -213,12 +241,51 @@ export default function SettingsModal({ onClose }) {
           )}
 
           {activeTab === 'Preferences' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                <span className="text-slate-700 dark:text-slate-200 font-medium text-sm">App Theme</span>
-                <div className="flex items-center bg-slate-200/50 dark:bg-slate-900 rounded-full p-1 border border-slate-200 dark:border-slate-700">
-                  <button onClick={() => setPrefsData({...prefsData, theme: 'light'})} className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${prefsData.theme === 'light' ? 'bg-white text-slate-800 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}>Light</button>
-                  <button onClick={() => setPrefsData({...prefsData, theme: 'dark'})} className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${prefsData.theme === 'dark' ? 'bg-white text-slate-800 shadow-sm dark:bg-slate-700 dark:text-white' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}>Dark</button>
+            <div className="space-y-5">
+              {/* Dark vs Light Mode Toggle */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-2 ml-1 uppercase tracking-wider">Appearance</label>
+                <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 rounded-2xl p-1 border border-slate-200/50 dark:border-slate-700/50">
+                  <button 
+                    type="button"
+                    onClick={() => setSelectedMode('light')} 
+                    className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${selectedMode === 'light' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}
+                  >
+                    Light Mode
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setSelectedMode('dark')} 
+                    className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${selectedMode === 'dark' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}
+                  >
+                    Dark Mode
+                  </button>
+                </div>
+              </div>
+
+              {/* Theme Grid */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-2 ml-1 uppercase tracking-wider">Companion Theme</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { id: 'sunrise', name: 'Sunrise', desc: 'Calm & golden', colors: { start: '#ff7e5f', end: '#feb47b' } },
+                    { id: 'original', name: 'Original', desc: 'Lavender & coral', colors: { start: '#8a63f5', end: '#ff8c6b' } },
+                    { id: 'sunset', name: 'Sunset', desc: 'Midnight purple', colors: { start: '#da4453', end: '#89216b' } },
+                    { id: 'ocean', name: 'Ocean', desc: 'Cool cyan & navy', colors: { start: '#00c6ff', end: '#0072ff' } }
+                  ].map(t => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setSelectedTheme(t.id)}
+                      className={`flex items-center gap-3 p-3.5 rounded-2xl border-2 text-left transition-all ${selectedTheme === t.id ? 'border-aman-primary bg-slate-50 dark:bg-slate-800/80 shadow-md' : 'border-slate-100 dark:border-slate-800/40 bg-white dark:bg-slate-900 hover:border-slate-200 dark:hover:border-slate-700'}`}
+                    >
+                      <div className="w-8 h-8 rounded-full shadow-sm flex-shrink-0" style={{ background: `linear-gradient(135deg, ${t.colors.start} 0%, ${t.colors.end} 100%)` }} />
+                      <div>
+                        <div className="text-sm font-bold text-slate-800 dark:text-white">{t.name}</div>
+                        <div className="text-[10px] text-slate-400 font-medium">{t.desc}</div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
 

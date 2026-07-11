@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import InputBar from '../components/InputBar';
 import SettingsModal from '../components/SettingsModal';
 import { Menu } from 'lucide-react';
+import { applyTheme } from '../utils/theme';
 import { useAuthStore } from '../store/useAuthStore';
 
 export default function AppLayout() {
@@ -19,12 +20,9 @@ export default function AppLayout() {
       fetchUser();
     }
   }, [user, fetchUser]);
+
   useEffect(() => {
-    if (user?.theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    applyTheme(user?.theme);
   }, [user?.theme]);
 
   return (

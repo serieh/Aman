@@ -11,7 +11,7 @@ from langgraph.prebuilt import InjectedState
 from .config import (
     LLM_FAST_MODEL_NAME, LLM_FAST_MAX_TOKENS, LLM_FAST_MAX_RETRIES,
 
-    LLM_THINKING_MODEL_NAME, LLM_THINKING_SECONDARY_MODEL_NAME,
+    LLM_THINKING_MODEL_NAME, LLM_THINKING_SECONDARY_MODEL_NAME, LLM_THINKING_TERTIARY_MODEL_NAME,
     LLM_THINKING_MAX_TOKENS, LLM_THINKING_MAX_RETRIES,
 
     USE_OLLAMA,
@@ -223,6 +223,13 @@ thinking_secondary_llm = ChatGroq(
     api_key=os.getenv("GROQ_API_KEY", "")
 )
 
+thinking_tertiary_llm = ChatGroq(
+    model_name=LLM_THINKING_TERTIARY_MODEL_NAME,
+    max_retries=LLM_THINKING_MAX_RETRIES,
+    max_tokens=LLM_THINKING_MAX_TOKENS,
+    api_key=os.getenv("GROQ_API_KEY", "")
+)
+
 # Fast model: same Groq model as thinking, but used without thinking/reasoning
 llm_fast_primary = ChatGroq(
     model_name=LLM_FAST_MODEL_NAME,
@@ -257,14 +264,15 @@ def check_groq_output(response):
 # ── Bind tools to all models ────────────────────────────────────────
 groq_thinking_with_tools = thinking_llm.bind_tools(tools) | RunnableLambda(check_groq_output)
 groq_secondary_with_tools = thinking_secondary_llm.bind_tools(tools) | RunnableLambda(check_groq_output)
+groq_tertiary_with_tools = thinking_tertiary_llm.bind_tools(tools) | RunnableLambda(check_groq_output)
 groq_fast_with_tools = llm_fast_primary.bind_tools(tools) | RunnableLambda(check_groq_output)
 
 # ── Build fallback chains conditionally ──────────────────────────────
-# Thinking chain: primary → secondary → [ollama gemma4:26b if USE_OLLAMA]
-thinking_fallbacks = [groq_secondary_with_tools]
+# Thinking chain: primary → secondary → tertiary → [ollama gemma4:26b if USE_OLLAMA]
+thinking_fallbacks = [groq_secondary_with_tools, groq_tertiary_with_tools]
 
-# Fast chain: primary (no-think) → secondary → [ollama gemma4:e2b if USE_OLLAMA]
-fast_fallbacks = [groq_secondary_with_tools]
+# Fast chain: primary (no-think) → secondary → tertiary → [ollama gemma4:e2b if USE_OLLAMA]
+fast_fallbacks = [groq_secondary_with_tools, groq_tertiary_with_tools]
 
 if USE_OLLAMA:
     from langchain_ollama import ChatOllama

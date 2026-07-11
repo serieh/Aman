@@ -14,6 +14,7 @@ export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
 
   const [editingChatId, setEditingChatId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     const fetchChats = async () => {
@@ -222,11 +223,38 @@ export default function Sidebar({ isOpen, setIsOpen, onOpenSettings }) {
           <button onClick={onOpenSettings} className="flex items-center justify-center w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" title="Settings">
             <Settings size={16} />
           </button>
-          <button onClick={handleLogout} className="flex items-center justify-center w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600 transition-colors" title="Log Out">
+          <button onClick={() => setShowLogoutConfirm(true)} className="flex items-center justify-center w-9 h-9 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600 transition-colors" title="Log Out">
             <LogOut size={16} />
           </button>
         </div>
       </aside>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in" onClick={() => setShowLogoutConfirm(false)}>
+          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-200/50 dark:border-slate-800/50 text-center animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950/50 flex items-center justify-center mx-auto mb-4 text-red-500">
+              <LogOut size={22} />
+            </div>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Log Out</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">Are you sure you want to log out of your Companion account?</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 py-2.5 rounded-full text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-850 transition-colors border border-slate-200/50 dark:border-slate-700/50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="flex-1 py-2.5 rounded-full text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20 active:scale-95"
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
