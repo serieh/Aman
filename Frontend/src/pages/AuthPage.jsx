@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import api from '../api/axios';
 import { ChevronDown, Calendar, AlertCircle, Check, ArrowLeft } from 'lucide-react';
@@ -121,6 +121,11 @@ export default function AuthPage() {
       {/* Right side: Login Form / Companion Selector */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white dark:bg-slate-900 overflow-y-auto">
         <div className="w-full max-w-md space-y-8 pb-10 relative">
+          {/* Back to landing */}
+          <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors group">
+            <ArrowLeft size={15} className="group-hover:-translate-x-0.5 transition-transform" />
+            Back to home
+          </Link>
           {/* Header */}
           {(isLogin || step === 1) && (
             <div className="text-center lg:text-left transition-all duration-300">

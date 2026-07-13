@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Enable class-based dark mode — makes dark: variants respond to .dark on <html> */
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-aman-bg-light: var(--color-bg-light);
   --color-aman-bg-dark: var(--color-bg-dark);
@@ -28,7 +31,7 @@
      ======================================================== */
   --color-primary: #ff7e5f;
   --color-secondary: #feb47b;
-  --color-tertiary: #ffe3d1;
+  --color-tertiary: #c94b2c;  /* Deep burnt orange — ensures gradient text is readable on warm bg */
   --color-bg-light: #fffcf8;
   --color-bg-dark: #1b120f;
   --color-surface-light: #fff5eb;

@@ -6,7 +6,6 @@ from pydantic import BaseModel
 from langchain.tools import tool
 from langchain_groq import ChatGroq
 from langchain_core.runnables import RunnableLambda
-from langgraph.prebuilt import InjectedState
 
 from .config import (
     LLM_FAST_MODEL_NAME, LLM_FAST_MAX_TOKENS, LLM_FAST_MAX_RETRIES,
@@ -50,14 +49,13 @@ def rag_search(query: str) -> str:
 
 
 @tool
-def search_user_memory(query: str, state: Annotated[dict, InjectedState]) -> str:
+def search_user_memory(query: str, user_id: str) -> str:
     """
     Search your long-term memory for permanent facts, preferences, or biographical details
     about the user. Use this when you need to recall past details they shared.
     """
-    user_id = state.get("user_id")
     if not user_id:
-        return "Error: User ID not found in conversation state."
+        return "Error: User ID not provided."
         
     logger.info(f"Memory search invoked for user {user_id} with query: {query}")
     # Local import to prevent circular dependency

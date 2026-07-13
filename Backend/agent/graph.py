@@ -1,7 +1,9 @@
 import operator
+import asyncio
+import inspect
 from typing import TypedDict, Annotated, Sequence
 from langgraph.graph import StateGraph, END
-from langgraph.prebuilt import ToolNode
+from langchain_core.messages import ToolMessage
 from langchain_core.runnables import RunnableConfig
 
 from .llm import structured_llm_thinking, structured_llm_fast, tools
@@ -10,6 +12,9 @@ from .config import LLM_MAX_RETRIES, FALLBACK_RESPONSE
 
 logger = get_logger(__name__)
 logger.info("Creator agent module loaded")
+
+# Build a name -> LangChain tool registry from the tools list
+TOOL_REGISTRY = {tool.name: tool for tool in tools}
 
 class AgentState(TypedDict):
     messages: Annotated[Sequence, operator.add]
@@ -48,6 +53,72 @@ async def agent_node(state: AgentState, config: RunnableConfig):
                 return {"response": FALLBACK_RESPONSE}
             
 
+async def async_parallel_tool_node(state: AgentState, config: RunnableConfig):
+    """
+    Replaces ToolNode. Runs all tool_calls from the last AI message
+    concurrently using asyncio.gather(), then returns all results as
+    ToolMessage objects appended to messages.
+    """
+    last_message = state["messages"][-1]
+    tool_calls = last_message.tool_calls  # list of dicts: {id, name, args}
+
+    async def _invoke_one(tc: dict) -> ToolMessage:
+        tool_name = tc["name"]
+        tool_args = tc["args"]
+        tool_id = tc["id"]
+        tool_fn = TOOL_REGISTRY.get(tool_name)
+
+        if tool_fn is None:
+            return ToolMessage(
+                content=f"Error: tool '{tool_name}' not found.",
+                tool_call_id=tool_id,
+                name=tool_name
+            )
+
+        try:
+            # Replicate InjectedState: if the tool expects 'user_id', pass it explicitly
+            raw_fn = getattr(tool_fn, "func", tool_fn)
+            sig = inspect.signature(raw_fn)
+            invocation_args = dict(tool_args)
+            if "user_id" in sig.parameters:
+                invocation_args["user_id"] = state["user_id"]
+
+            result = await tool_fn.ainvoke(invocation_args, config=config)
+            content = result if isinstance(result, str) else str(result)
+        except Exception as e:
+            logger.warning(f"Tool '{tool_name}' failed: {e}")
+            content = f"Error: Tool '{tool_name}' failed to execute. Details: {str(e)}"
+
+        return ToolMessage(
+            content=content,
+            tool_call_id=tool_id,
+            name=tool_name
+        )
+
+    # Run all tool calls concurrently
+    tool_names = [tc["name"] for tc in tool_calls]
+    logger.info(f"Parallel tool execution started | tools: {tool_names} | chat_id: {state.get('chat_id')}")
+    
+    results = await asyncio.gather(
+        *[_invoke_one(tc) for tc in tool_calls],
+        return_exceptions=True
+    )
+
+    tool_messages = []
+    for i, r in enumerate(results):
+        if isinstance(r, Exception):
+            tool_messages.append(ToolMessage(
+                content=f"Error: Tool execution raised an exception. Details: {str(r)}",
+                tool_call_id=tool_calls[i]["id"],
+                name=tool_calls[i]["name"]
+            ))
+        else:
+            tool_messages.append(r)
+
+    logger.info(f"Parallel tool execution completed | tools: {tool_names}")
+    return {"messages": tool_messages}
+
+
 def should_use_tools(state: AgentState) -> str:
     """
     Edge condition: did the LLM ask to call a tool?
@@ -67,8 +138,7 @@ def build_graph() -> object:
     logger.info("Building agent graph")
 
     graph = StateGraph(AgentState)
-    tool_node = ToolNode(tools)
-    graph.add_node("tools", tool_node)
+    graph.add_node("tools", async_parallel_tool_node)
     graph.add_node("agent", agent_node)
     graph.set_entry_point("agent")
     graph.add_conditional_edges(
