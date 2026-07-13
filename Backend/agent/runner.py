@@ -6,7 +6,7 @@ from channels.layers import get_channel_layer
 from langchain_core.messages import SystemMessage, HumanMessage
 from chats.models import Chat
 from users.models import User
-from logger import get_logger
+from logger import get_logger, chat_id_var, user_id_var
 from timing_logger import timed_operation
 from agent.memory.history import load_history, save_message, update_chat_modify_date
 from agent.graph import GRAPH
@@ -119,6 +119,8 @@ def _check_chat_title(chat_id: str, user_message: str, user_id: str):
 
 
 async def run_agent(user_id: str, chat_id: str, user_message: str, model_preference: str = "2", mode: str = "normal", ai_msg_id: str | None = None, user_msg_id: str | None = None, persona_id: str | None = None):
+    chat_id_var.set(str(chat_id))
+    user_id_var.set(str(user_id))
     logger.info(f"Async Agent runner started | chat_id: {chat_id} | id: {user_id} | mode: {mode}")
 
     with timed_operation("total_request", chat_id=chat_id, user_id=user_id):

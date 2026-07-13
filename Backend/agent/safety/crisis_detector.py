@@ -4,6 +4,9 @@ from sentence_transformers import SentenceTransformer
 import torch
 
 import os
+from logger import get_logger
+logger = get_logger(__name__)
+
 from agent.qdrant_connection import get_shared_qdrant_client
 from .crisis_keywords import fast_crisis_check, keyword_crisis_hit, pattern_crisis_hit
 
@@ -55,9 +58,9 @@ def init_crisis_collection():
                 distance=Distance.COSINE
             )
         )
-        print(f"Created Qdrant collection: {CRISIS_COLLECTION}")
+        logger.info(f"Created Qdrant collection: {CRISIS_COLLECTION}")
     else:
-        print(f"Collection already exists: {CRISIS_COLLECTION}")
+        logger.debug(f"Collection already exists: {CRISIS_COLLECTION}")
 
 
 def populate_crisis_collection():
@@ -89,7 +92,7 @@ def populate_crisis_collection():
     ]
 
     client.upsert(collection_name=CRISIS_COLLECTION, points=points)
-    print(f"Populated {len(crisis_phrases)} crisis phrases into Qdrant.")
+    logger.info(f"Populated {len(crisis_phrases)} crisis phrases into Qdrant.")
 
 
 # ─── Gate 1: Keyword Check ────────────────────────────────────────────────────

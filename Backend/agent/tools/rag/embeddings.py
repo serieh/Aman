@@ -1,6 +1,9 @@
 from __future__ import annotations
 import os, sys
 from typing import Any
+from logger import get_logger
+logger = get_logger(__name__)
+
 from dotenv import load_dotenv
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -111,7 +114,7 @@ def ingest_sources_to_qdrant(
         collection_name=collection_name,
         batch_size=batch_size,
     )
-    print(f"Stored {len(docs)} chunks in Qdrant collection '{collection_name}'.")
+    logger.info(f"Stored {len(docs)} chunks in Qdrant collection '{collection_name}'.")
     return vectorstore
 
 get_qwen_embedding_model = get_embedding_model

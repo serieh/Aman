@@ -12,6 +12,9 @@ from langchain_community.document_loaders import PyPDFLoader, WebBaseLoader, Tex
 from langchain_core.documents import Document
 from pandas.errors import ParserError
 from pathlib import Path
+from logger import get_logger
+logger = get_logger(__name__)
+
 
 from agent.tools.rag.knowledge.loader import get_pdf_sources
 from agent.tools.rag.knowledge.URL_SOURCES import URL_SOURCES
@@ -120,7 +123,7 @@ def load_datasets(csv_sources: dict) -> list[Document]:
     """
     docs: list[Document] = []
     for name, path in csv_sources.items():
-        print(f"Loading dataset [{name}]: {path}")
+        logger.info(f"Loading dataset [{name}]: {path}")
         try:
             if str(path).lower().endswith((".xlsx", ".xls")):
                 try:
@@ -135,7 +138,7 @@ def load_datasets(csv_sources: dict) -> list[Document]:
                 except (UnicodeDecodeError, ParserError):
                     df = pd.read_csv(path, encoding="windows-1256", engine="python")
         except Exception as exc:
-            print(f"  Skipping {path}: {exc}")
+            logger.warning(f"  Skipping {path}: {exc}")
             continue
 
         drop_cols = [
@@ -146,7 +149,7 @@ def load_datasets(csv_sources: dict) -> list[Document]:
 
         col_map = _resolve_dataset_columns(df)
         if "Question" not in col_map or "Answer" not in col_map:
-            print(f"  Skipping {name}: missing Question/Answer columns")
+            logger.warning(f"  Skipping {name}: missing Question/Answer columns")
             continue
 
         for _, row in df.iterrows():
@@ -177,7 +180,7 @@ def load_datasets(csv_sources: dict) -> list[Document]:
                     },
                 )
             )
-    print(f"Loaded {len(docs)} dataset Q&A chunks.")
+    logger.info(f"Loaded {len(docs)} dataset Q&A chunks.")
     return docs
 
 
@@ -186,12 +189,12 @@ def load_datasets(csv_sources: dict) -> list[Document]:
 def load_pdfs(pf_sources: dict) -> list[Document]:
     docs: list[Document] = []
     for name, path in pf_sources.items():
-        print(f"Loading PDF [{name}]: {path}")
+        logger.info(f"Loading PDF [{name}]: {path}")
         try:
             loader = PyPDFLoader(path)
             pages = loader.load()
         except Exception as exc:
-            print(f"  Skipping {path}: {exc}")
+            logger.warning(f"  Skipping {path}: {exc}")
             continue
         for page in pages:
             cleaned = clean_text(page.page_content)
@@ -207,12 +210,12 @@ def load_pdfs(pf_sources: dict) -> list[Document]:
 def load_urls(url_sources: dict) -> list[Document]:
     docs: list[Document] = []
     for name, url in url_sources.items():
-        print(f"Loading URL [{name}]: {url}")
+        logger.info(f"Loading URL [{name}]: {url}")
         try:
             loader = WebBaseLoader(url)
             pages = loader.load()
         except Exception as exc:
-            print(f"  Skipping {url}: {exc}")
+            logger.warning(f"  Skipping {url}: {exc}")
             continue
         for page in pages:
             cleaned = clean_text(page.page_content)
@@ -229,12 +232,12 @@ def load_text_files() -> list[Document]:
     docs: list[Document] = []
     knowledge_dir = Path(__file__).parent / "knowledge"
     for file_path in knowledge_dir.glob("*.md"):
-        print(f"Loading Markdown [{file_path.name}]: {file_path}")
+        logger.info(f"Loading Markdown [{file_path.name}]: {file_path}")
         try:
             loader = TextLoader(str(file_path), encoding="utf-8")
             pages = loader.load()
         except Exception as exc:
-            print(f"  Skipping {file_path}: {exc}")
+            logger.warning(f"  Skipping {file_path}: {exc}")
             continue
         for page in pages:
             cleaned = clean_text(page.page_content)
@@ -391,5 +394,5 @@ def ingest(
 
     chunks = chunk_publication_documents(docs)
     chunks = _dedupe_documents(chunks)
-    print(f"Ingest complete: {len(chunks)} clean chunks ready.")
+    logger.info(f"Ingest complete: {len(chunks)} clean chunks ready.")
     return chunks
