@@ -128,7 +128,7 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
             # Sync wrapper functions for asyncio.to_thread with timing
             def _timed_load_history():
                 with timed_operation("history_load", chat_id=chat_id):
-                    return load_history(chat_id)
+                    return load_history(chat_id, mode=mode)
 
             def _timed_estimate_emotion():
                 with timed_operation("emotion_estimation", chat_id=chat_id):
@@ -211,6 +211,7 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
             is_safe = True
             assistant_content = ""
             assistant_flag = safety_tier
+            safety_blocked = False
 
             for attempt in range(SAFETY_MAX_OUTPUT_RETRIES):
                 with timed_operation("llm_inference", chat_id=chat_id, attempt=attempt):
@@ -260,6 +261,8 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
                                 resp = node_out["response"]
                                 if isinstance(resp, dict) and "content" in resp:
                                     logger.info(f"CAPTURED FROM AGENT NODE: {repr(resp['content'])}")
+                                    if resp.get("error_type") == "safety":
+                                        safety_blocked = True
                                     if not final_text.strip() and resp["content"].strip() and not tools_called_in_attempt:
                                         final_text = resp["content"]
                                         yield {"replace_all": final_text}
@@ -311,6 +314,15 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
                     yield {"replace_all": redacted_message}
                     assistant_content = redacted_message
                     assistant_flag = "UNSAFE"
+
+            # If the response is the fallback response (due to Groq safety refusal/block),
+            # mark the user message as UNSAFE in the database so it is excluded from future history load
+            if (safety_blocked or assistant_flag == "UNSAFE") and user_msg_id:
+                try:
+                    await asyncio.to_thread(Message.objects.filter(message_id=user_msg_id).update, safety_flag="UNSAFE")
+                    logger.info(f"Marked user message {user_msg_id} as UNSAFE to prevent chat poisoning")
+                except Exception as ex:
+                    logger.error(f"Failed to mark user message as UNSAFE: {ex}")
 
             with timed_operation("save_response", chat_id=chat_id):
                 await asyncio.to_thread(save_message, chat_id, role="assistant", content=assistant_content, safety_flag=assistant_flag, message_id=ai_msg_id, persona_id=persona_id)

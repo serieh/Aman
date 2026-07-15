@@ -10,16 +10,18 @@ from logger import get_logger
 logger = get_logger(__name__)
 
 
-def load_history(chat_id: str) -> list:
+def load_history(chat_id: str, mode: str = "normal") -> list:
     from django.db import close_old_connections
     close_old_connections()
-    logger.debug(f"History load started | chat_id: {chat_id}")
+    logger.debug(f"History load started | chat_id: {chat_id} | mode: {mode}")
 
-    rows = list(
+    limit = 12 if mode == "voice" else 20
+    all_rows = list(
         Message.objects.select_related("chat").filter(chat_id=chat_id, is_active=True)
         .exclude(safety_flag="UNSAFE")
-        .order_by("creation_date")
+        .order_by("-creation_date")[:limit]
     )
+    rows = list(reversed(all_rows))
 
     logger.debug(f"Fetched {len(rows)} messages from DB for chat_id={chat_id}")
 

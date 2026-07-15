@@ -4,6 +4,7 @@ import { useChatStore } from '../store/useChatStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import VoiceModeButton from './VoiceModeButton';
 
 export default function InputBar({ chatId }) {
   const isGenerating = useChatStore(state => chatId ? !!state.isGeneratingByChat[String(chatId)] : false);
@@ -163,9 +164,13 @@ export default function InputBar({ chatId }) {
 
       if (data.replace_all) {
         const updated = (useChatStore.getState().messagesByChat[String(targetChatId)] || []).map(m => 
-          m.message_id === aiMsgId ? { ...m, content: data.replace_all } : m
+          m.message_id === aiMsgId ? { ...m, content: data.replace_all, isGenerating: !data.done } : m
         );
         useChatStore.getState().setChatMessages(targetChatId, updated);
+        if (data.done) {
+          useChatStore.getState().setIsGeneratingForChat(targetChatId, false);
+          setAbortController(null);
+        }
         return;
       } else if (data.chunk) {
         const currentMessages = useChatStore.getState().messagesByChat[String(targetChatId)] || [];
@@ -392,9 +397,12 @@ export default function InputBar({ chatId }) {
             <Square size={16} className="fill-current" />
           </button>
         ) : (
-          <button type="submit" disabled={!inputMessage.trim()} className="p-2 bg-slate-800 dark:bg-white text-white dark:text-slate-800 rounded-full transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-700 active:scale-90 flex-shrink-0">
-            <ArrowUp size={16} strokeWidth={2.5} />
-          </button>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {chatId !== 'temp' && <VoiceModeButton chatId={chatId || 'new'} />}
+            <button type="submit" disabled={!inputMessage.trim()} className="p-2 bg-slate-800 dark:bg-white text-white dark:text-slate-800 rounded-full transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-700 active:scale-90">
+              <ArrowUp size={16} strokeWidth={2.5} />
+            </button>
+          </div>
         )}
       </form>
 

@@ -6,6 +6,8 @@ import SettingsModal from '../components/SettingsModal';
 import { Menu } from 'lucide-react';
 import { applyTheme } from '../utils/theme';
 import { useAuthStore } from '../store/useAuthStore';
+import { useVoiceStore } from '../store/useVoiceStore';
+import VoiceOverlay from '../components/VoiceOverlay';
 
 export default function AppLayout() {
   const [showSettings, setShowSettings] = useState(false);
@@ -14,6 +16,7 @@ export default function AppLayout() {
   const chatId = location.pathname.split('/chat/')[1] || null;
   const user = useAuthStore(state => state.user);
   const fetchUser = useAuthStore(state => state.fetchUser);
+  const isVoiceOpen = useVoiceStore(state => state.isOpen);
 
   useEffect(() => {
     if (!user) {
@@ -56,6 +59,7 @@ export default function AppLayout() {
       </main>
       
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      {isVoiceOpen && <VoiceOverlay />}
     </div>
   );
 }

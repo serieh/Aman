@@ -50,7 +50,9 @@ async def agent_node(state: AgentState, config: RunnableConfig):
             logger.warning(f"Agent node attempt {attempt}/{LLM_MAX_RETRIES} failed | chat_id: {chat_id} | error: {str(e)}")
             if attempt == LLM_MAX_RETRIES:
                 logger.error(f"Agent node exhausted retries, using fallback | chat_id: {chat_id}")
-                return {"response": FALLBACK_RESPONSE}
+                err_str = str(e).lower()
+                is_safety = any(x in err_str for x in ["safety", "block", "policy", "refus", "inappropriate", "violation"])
+                return {"response": {**FALLBACK_RESPONSE, "error_type": "safety" if is_safety else "api_error"}}
             
 
 async def async_parallel_tool_node(state: AgentState, config: RunnableConfig):

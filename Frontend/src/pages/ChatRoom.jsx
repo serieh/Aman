@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useChatStore } from '../store/useChatStore';
+import { useVoiceStore } from '../store/useVoiceStore';
 import api from '../api/axios';
 import MessageBubble from '../components/MessageBubble';
 
@@ -10,6 +11,7 @@ export default function ChatRoom() {
   const { chatId } = useParams();
   const messages = useChatStore(state => state.messagesByChat[String(chatId)] || EMPTY_ARRAY);
   const setChatMessages = useChatStore(state => state.setChatMessages);
+  const isVoiceOpen = useVoiceStore(state => state.isOpen);
   const scrollRef = useRef(null);
   const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
 
@@ -79,7 +81,7 @@ export default function ChatRoom() {
     return () => {
       isCancelled = true;
     };
-  }, [chatId, setChatMessages]);
+  }, [chatId, setChatMessages, isVoiceOpen]);
 
 
   // Smart Auto-scrolling — triggers on every message change

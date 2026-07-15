@@ -22,8 +22,8 @@ USE_OLLAMA = os.environ.get("AMAN_USE_OLLAMA", "0") == "1"
 LLM_MAX_RETRIES = 3
 DYNAMIC_CONTEXT_WINDOW = True
 
-# LLM FAST (same model as thinking, but with thinking disabled)
-LLM_FAST_MODEL_NAME = "openai/gpt-oss-120b"
+# LLM FAST
+LLM_FAST_MODEL_NAME = "llama-3.3-70b-versatile"
 LLM_FAST_MAX_TOKENS = 2048
 LLM_FAST_MAX_RETRIES = 1
 

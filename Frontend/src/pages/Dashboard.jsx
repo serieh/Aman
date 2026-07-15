@@ -1,9 +1,13 @@
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useChatStore } from '../store/useChatStore';
-import { Heart, Brain, Wind, Lightbulb } from 'lucide-react';
+import { useVoiceStore } from '../store/useVoiceStore';
+import api from '../api/axios';
+import { Heart, Brain, Wind, Lightbulb, Phone } from 'lucide-react';
 
 export default function Dashboard() {
   const { setInputMessage, setTriggerSend } = useChatStore();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Clear current chat state when landing on the dashboard
@@ -13,6 +17,48 @@ export default function Dashboard() {
   const handleChipClick = (text) => {
     setInputMessage(text);
     setTriggerSend(true);
+  };
+
+  const handleVoiceStart = async () => {
+    // Synchronously initialize AudioContext on user gesture to avoid browser sandbox suspension
+    if (typeof window !== 'undefined') {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        try {
+          if (!window.__amanAudioContext) {
+            window.__amanAudioContext = new AudioCtx();
+          }
+          if (window.__amanAudioContext.state === 'suspended') {
+            window.__amanAudioContext.resume();
+          }
+        } catch (e) {
+          console.error("Failed to initialize gesture AudioContext:", e);
+        }
+      }
+    }
+
+    try {
+      const { data } = await api.post('/chats/', {
+        persona_id: useChatStore.getState().selectedPersonaId || 'aman'
+      });
+      const newChatId = String(data.chat_id);
+      
+      // Update chat store list
+      const currentChats = useChatStore.getState().chats;
+      useChatStore.setState({
+        chats: [data, ...currentChats],
+        currentChat: data
+      });
+      
+      // Open Voice overlay and bind to new chat ID
+      useVoiceStore.setState({ activeChatId: newChatId });
+      useVoiceStore.getState().setIsOpen(true);
+      
+      // Navigate to chat
+      navigate(`/app/chat/${newChatId}`);
+    } catch (e) {
+      console.error("Failed to start voice chat from dashboard", e);
+    }
   };
 
   const suggestions = [
@@ -32,7 +78,7 @@ export default function Dashboard() {
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-aman-primary to-aman-tertiary">feeling today?</span>
           </h1>
-          <p className="text-slate-600 text-lg font-medium">Choose a topic or type your own message below.</p>
+          <p className="text-slate-600 text-lg font-medium">Choose a topic or start a voice conversation.</p>
         </div>
         
         {/* Suggestion Chips */}
@@ -50,6 +96,17 @@ export default function Dashboard() {
               </button>
             );
           })}
+        </div>
+
+        {/* Dashboard Voice Action */}
+        <div className="flex justify-center pt-2">
+          <button
+            onClick={handleVoiceStart}
+            className="flex items-center gap-2.5 px-6 py-3.5 rounded-full bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-sm font-bold tracking-wide shadow-lg hover:shadow-slate-900/20 transition-all hover:scale-105"
+          >
+            <Phone size={16} className="text-indigo-400" />
+            Start Voice Conversation
+          </button>
         </div>
       </div>
     </div>
