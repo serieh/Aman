@@ -66,10 +66,10 @@
   --color-text-muted: #7e7e82;
 }
 
-/* Sunset Theme (Deep Night Purple/Crimson/Gold) */
+/* Sunset Theme (Deep Night Purple/Crimson/Sunset Purple) */
 [data-theme='sunset'] {
   --color-primary: #da4453;
-  --color-secondary: #f9d423;
+  --color-secondary: #89216b;
   --color-tertiary: #a17fe0;
   --color-bg-light: #fffbfa;
   --color-bg-dark: #0a0812;
@@ -79,7 +79,7 @@
   --color-border-light-heavy: #ffb8b2;
   --color-border-dark: #231c3b;
   --color-gradient-start: #da4453;
-  --color-gradient-end: #f9d423;
+  --color-gradient-end: #89216b;
   --color-glass: rgba(255, 255, 255, 0.25);
   --color-glass-dark: rgba(10, 8, 18, 0.25);
   --color-text-muted: #85707c;
