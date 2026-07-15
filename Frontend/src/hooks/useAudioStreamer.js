@@ -84,7 +84,7 @@ export function useAudioStreamer(chatId, token, options = {}) {
   // VAD Threshold parameters
   const noiseSamplesRef = useRef([]);
   const adaptiveThresholdRef = useRef(-52);
-  const SILENCE_DURATION = 1500; // ms of continuous silence before turn ends
+  const SILENCE_DURATION = 1200; // ms of continuous silence before turn ends
   const isUserSpeakingRef = useRef(false);
   const silenceTimerRef = useRef(null);
   

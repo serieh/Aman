@@ -24,8 +24,11 @@ class SentenceBuffer:
     def __init__(self, min_length=45):
         self.buffer = ""
         self.min_length = min_length
-        # Split on sentence boundaries
+        self.is_first = True
+        # Standard sentence boundaries
         self.split_pat = re.compile(r'(?<=[.!?؟\n])\s+')
+        # First-turn phrase boundaries including commas and semicolons
+        self.first_split_pat = re.compile(r'(?<=[.!?؟\n,،;؛])\s+')
 
     def add_chunk(self, chunk: str):
         self.buffer += chunk
@@ -39,7 +42,10 @@ class SentenceBuffer:
             self.buffer = ""
             return [remaining] if remaining else []
 
-        parts = self.split_pat.split(self.buffer)
+        pat = self.first_split_pat if self.is_first else self.split_pat
+        min_len = 15 if self.is_first else self.min_length
+
+        parts = pat.split(self.buffer)
         if len(parts) <= 1:
             return []
 
@@ -58,10 +64,23 @@ class SentenceBuffer:
                 current = s
             else:
                 current += " " + s
-            # Yield if it's long enough or ends with terminal punctuation
-            if len(current) >= self.min_length or (current and current[-1] in ".!?؟"):
+            
+            is_terminal = False
+            if current:
+                last_char = current[-1]
+                if self.is_first:
+                    is_terminal = last_char in ".!?؟,،;؛"
+                else:
+                    is_terminal = last_char in ".!?؟"
+
+            if len(current) >= min_len or is_terminal:
                 merged.append(current)
+                if self.is_first:
+                    self.is_first = False
+                    pat = self.split_pat
+                    min_len = self.min_length
                 current = ""
+
         if current:
             self.buffer = current + " " + self.buffer
 
@@ -262,50 +281,95 @@ class VoiceConsumer(AsyncWebsocketConsumer):
                 "ai_message_id": ai_msg_id
             }))
             
-            # Step 3: Run LangGraph pipeline
+            # Step 3: Run LangGraph pipeline with concurrent prefetch TTS synthesis
             buffer = SentenceBuffer()
             assistant_content = ""
-            
-            async for payload in run_agent(
-                user_id=user_id,
-                chat_id=chat_id_str,
-                user_message=transcript,
-                model_preference=model_preference,
-                mode="voice",
-                ai_msg_id=ai_msg_id,
-                user_msg_id=user_msg_id,
-                persona_id=persona_id
-            ):
-                # run_agent can return chunks or replace_all blocks
-                if isinstance(payload, dict):
-                    chunk = payload.get("chunk", "")
-                    if "replace_all" in payload:
-                        chunk = payload["replace_all"]
-                        assistant_content = chunk
-                        buffer.buffer = chunk
-                    elif "clear" in payload:
-                        assistant_content = ""
-                        buffer.buffer = ""
-                else:
-                    chunk = str(payload)
-                    
-                if chunk and not isinstance(payload, dict):
-                    assistant_content += chunk
-                    buffer.add_chunk(chunk)
-                    
-                # Stream sentences dynamically
-                sentences = buffer.get_sentences()
-                for sentence in sentences:
+            synthesis_queue = asyncio.Queue()
+            all_tasks = []
+
+            async def tts_worker(txt, vc):
+                try:
+                    audio_bytes = await synthesize_speech(txt, vc)
+                    audio_b64 = base64.b64encode(audio_bytes).decode("ascii")
+                    return {"text": txt, "audio_base64": audio_b64, "error": None}
+                except Exception as ex:
+                    logger.error(f"Prefetch TTS failed for text '{txt}': {ex}")
+                    return {"text": txt, "audio_base64": "", "error": str(ex)}
+
+            async def synthesis_sender_loop(queue, target_ai_msg_id):
+                while True:
+                    task = await queue.get()
+                    if task is None:
+                        break
+                    try:
+                        res = await task
+                        await self.send(text_data=json.dumps({
+                            "audio_segment": {
+                                "text": res["text"],
+                                "audio_base64": res["audio_base64"],
+                                "format": "mp3",
+                                "error": res["error"],
+                                "ai_message_id": target_ai_msg_id
+                            }
+                        }))
+                    except Exception as loop_ex:
+                        logger.error(f"Error in synthesis_sender_loop sending segment: {loop_ex}")
+                    finally:
+                        queue.task_done()
+
+            # Start background sender task
+            sender_task = asyncio.create_task(synthesis_sender_loop(synthesis_queue, ai_msg_id))
+
+            try:
+                async for payload in run_agent(
+                    user_id=user_id,
+                    chat_id=chat_id_str,
+                    user_message=transcript,
+                    model_preference=model_preference,
+                    mode="voice",
+                    ai_msg_id=ai_msg_id,
+                    user_msg_id=user_msg_id,
+                    persona_id=persona_id
+                ):
+                    # run_agent can return chunks or replace_all blocks
+                    if isinstance(payload, dict):
+                        chunk = payload.get("chunk", "")
+                        if "replace_all" in payload:
+                            chunk = payload["replace_all"]
+                            assistant_content = chunk
+                            buffer.buffer = chunk
+                        elif "clear" in payload:
+                            assistant_content = ""
+                            buffer.buffer = ""
+                    else:
+                        chunk = str(payload)
+                        
+                    if chunk and not isinstance(payload, dict):
+                        assistant_content += chunk
+                        buffer.add_chunk(chunk)
+                        
+                    # Stream sentences dynamically
+                    sentences = buffer.get_sentences()
+                    for sentence in sentences:
+                        if sentence:
+                            resolved_voice = resolve_voice_for_text(sentence, preferred_voice_id, persona_id)
+                            t = asyncio.create_task(tts_worker(sentence, resolved_voice))
+                            all_tasks.append(t)
+                            await synthesis_queue.put(t)
+
+                # Flush remaining tokens in buffer
+                remaining_sentences = buffer.get_sentences(force_remaining=True)
+                for sentence in remaining_sentences:
                     if sentence:
                         resolved_voice = resolve_voice_for_text(sentence, preferred_voice_id, persona_id)
-                        await self.synthesize_and_stream_segment(sentence, resolved_voice, ai_msg_id)
+                        t = asyncio.create_task(tts_worker(sentence, resolved_voice))
+                        all_tasks.append(t)
+                        await synthesis_queue.put(t)
 
-            # Flush remaining tokens in buffer
-            remaining_sentences = buffer.get_sentences(force_remaining=True)
-            for sentence in remaining_sentences:
-                if sentence:
-                    resolved_voice = resolve_voice_for_text(sentence, preferred_voice_id, persona_id)
-                    await self.synthesize_and_stream_segment(sentence, resolved_voice, ai_msg_id)
+            finally:
+                # Signal EOF to sender loop and wait for it
+                await synthesis_queue.put(None)
+                await sender_task
 
             # Send complete marker
             await self.send(text_data=json.dumps({
@@ -342,6 +406,8 @@ class VoiceConsumer(AsyncWebsocketConsumer):
             
         except asyncio.CancelledError:
             logger.info("Voice turn processing cancelled (interrupted)")
+            if 'sender_task' in locals() and not sender_task.done():
+                sender_task.cancel()
             if assistant_content and assistant_content.strip() and ai_msg_id:
                 try:
                     from agent.memory.history import save_message, update_chat_modify_date
@@ -365,6 +431,12 @@ class VoiceConsumer(AsyncWebsocketConsumer):
                 "status": "idle",
                 "error": "Failed to process voice response."
             }))
+        finally:
+            # Cancel all pending TTS tasks to prevent leaks
+            if 'all_tasks' in locals():
+                for t in all_tasks:
+                    if not t.done():
+                        t.cancel()
 
     async def synthesize_and_stream_segment(self, text, voice, ai_msg_id):
         """Synthesizes text segment asynchronously and sends it as base64 segment."""
