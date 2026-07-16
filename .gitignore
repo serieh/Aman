@@ -319,3 +319,4 @@ test_trigger.patch
 .agents
 .claude
 Moudles/
+Tests/results/

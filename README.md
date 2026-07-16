@@ -1,101 +1,76 @@
 # Aman
 
-G'day! Welcome to **Aman**. This project is a bilingual (Arabic-English) emotional wellness support AI agent. It's built to provide safe, warm, and emotionally intelligent support for folks experiencing emotional distress, stress, or just needing a solid yarn when things get tough.
+![Landing Page](Documentation/images/landing-page.png)
 
-## Purpose
+Aman (أمان — *safety*, *peace*) is a multimodal, bilingual (Arabic-English) mental health companion designed to provide culturally sensitive support for the Middle East and North Africa (MENA) region. It offers a calm space to talk, reflect, and feel heard, operating strictly within safe clinical boundaries. 
 
-Aman aims to be a virtual shoulder to lean on. It's not a doctor (don't go asking it to prescribe you anything, mate!), but it provides factually grounded, culturally sensitive support, particularly tailored for the Arab world. It uses an advanced RAG (Retrieval-Augmented Generation) pipeline and local AI models to keep conversations private, fast, and empathetic.
+This repository contains the complete stack: a React + Vite web application, a Django backend, and an AI orchestration layer powered by LangGraph, Qdrant, and local safety classifiers.
+
+![Active Chat Interface](Documentation/images/active-chat.png)
+![Settings Interface](Documentation/images/settings.png)
+
+## Recognition 🏆
+- **Best Graduation Project:** Notied as the top project with distinction among all graduation projects at the IT Faculty of [Al-Ahliyya Amman University](https://www.ammanu.edu.jo/) (2026).
+- **NTP Competition 2026:** Proud competitor and participant in the National Technology Parade (NTP) 2026.
 
 ## Key Features
 
-- **Arab Cultural Alignment**: The agent is aligned with Arab cultural norms and Levantine dialects, providing sensitive guidance reframed around cultural values instead of specific religious frameworks.
-- **Modular Companions**: Rather than a single character, users can converse with multiple distinct companions, each with unique traits, genders, accents, and Levantine dialects:
-  - **Aman**: A warm, lovely, and emotionally intelligent female companion (Syrian accent).
-  - **Tariq**: A calm, structured, and logical male companion (Jordanian accent).
-  - **Layla**: A friendly, deeply empathetic female companion who focuses on listening (Palestinian accent).
-- **Companion Selection UI**: A flexible dropdown selector in the message bar allows changing companions mid-chat, integrated alongside a two-step registration flow that lets users pick their default companion upon account creation.
+- **Multimodal Chat**: Supports text and asynchronous or live voice conversation modes.
+- **Cultural Alignment**: Evaluates and responds to distress using Arabic dialects (Levantine) and cultural context, rather than strictly Western psychiatric frameworks.
+- **Two-Stage Safety Firewall**: Screens inputs for active crisis indicators (RED flag) and culturally sensitive topics (GRAY flag) using local Sentence-Transformer embeddings, escalating to de-escalation protocols when necessary.
+- **Clinically Grounded (RAG)**: Retrieves guidance from a curated vector database (including WHO reports and the Shifaa corpus) to prevent hallucinations and unsupported medical claims.
+- **Long-Term Memory**: Extracts and recalls biographical facts across sessions for signed-in users, maintaining continuity.
+- **Guest Mode**: Allows users to chat anonymously with all history kept in local browser storage.
 
-## How it Works
+## Architecture Overview
 
-The Aman agent architecture operates via a multi-tiered pipeline:
-1. **Persona Assembly**: Upon chat creation, the selected `persona_id` dynamically loads specific behavioral, linguistic, and dialect guidelines from the persona registry.
-2. **PII Masking & Emotion Analysis**: User input is screened for PII, and the user's emotional state is classified using the `AnasAlokla/multilingual_go_emotions` model.
-3. **Safety Firewall**: A dual-layer gate (local keyword matching and a Sentence-Transformer semantic check in Qdrant) flags high-risk crisis inputs.
-4. **Clinical Grounding (RAG)**: If clinical context is required, Qdrant is queried to retrieve relevant therapeutic guidelines.
-5. **Prompt Construction**: A 5-layer prompt (Core Persona + Safety + Cultural + RAG Tools + Dynamic Emotion/History) is built and dispatched to the LLM.
-6. **Streaming Response**: The response is streamed token-by-token back to the frontend client over WebSockets (Django Channels).
+Aman is built using a modular multi-agent framework rather than a single unrestricted language model call. 
 
-## Requirements
+![System Architecture](Documentation/images/System%20Architecture%20Diagram.png)
 
-To get this beauty up and running, you'll need the following installed on your rig:
+- **Frontend (`Frontend/`)**: React 19, Vite, Tailwind CSS v4, Zustand.
+- **Backend (`Backend/`)**: Django 6.0 (REST Framework) with Daphne/Channels for WebSocket streaming.
+- **AI Orchestration**: LangGraph routes inputs through perception, safety, retrieval, memory, and generation agents.
+- **Data Stores**: PostgreSQL (relational data) and Qdrant (semantic vector storage).
+- **Models**: Groq (`gpt-oss-120b`) for generative reasoning, [`bge-m3`](https://huggingface.co/BAAI/bge-m3) for clinical retrieval embeddings, [`all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) for the low-latency safety firewall, and [`multilingual_go_emotions`](https://huggingface.co/AnasAlokla/multilingual_go_emotions) for emotion detection.
 
-- **Docker** and **Docker Compose** (for spinning up PostgreSQL & Qdrant)
-- **Node.js** (v18+) and **npm** (for the frontend React app)
-- **Python** (v3.12+) and **uv** (the Python package manager used to run the backend and tests)
-- **Ollama** (optional, for local model fallbacks)
+For a detailed breakdown of the system design, evaluation metrics, and setup instructions, please refer to the [Documentation Directory](Documentation/index.md).
 
-## Dependencies
+## Getting Started
 
-Aman is built on the shoulders of giants. Here's what's powering it under the hood:
+### Prerequisites
+- **Python 3.11+** (using `uv` for package management)
+- **Node.js 20+**
+- **Docker** and **Docker Compose** (for PostgreSQL and Qdrant)
 
-- **Backend:** Django, Django REST Framework, Channels (WebSockets for real-time chat) in the `Backend/` directory
-- **Frontend:** React + Vite (for that snappy UI) in the `Frontend/` directory
-- **AI & Data:** LangChain, LangGraph, Sentence-Transformers, HuggingFace
-- **Databases:** PostgreSQL (relational data) and Qdrant (vector storage for RAG and long-term memory)
+### Quick Start
+1. Clone the repository and copy the environment template:
+   ```bash
+   cp .env.example .env
+   ```
+2. Fill in the required keys in `.env` (e.g., `GROQ_API_KEY`, `SECRET_KEY`).
+3. Run the development stack using the provided Makefile:
+   ```bash
+   make dev
+   ```
+4. Access the application at `http://localhost:5173`.
 
-## How to Run
+*For detailed installation and production build instructions, see [Setup and Deployment](Documentation/Setup_and_Deployment.md).*
 
-Forget typing out twenty different commands. We've got a `Makefile` that does the heavy lifting for you:
+## Documentation
 
-### 1. Configure Environment Variables
-Before running the application, set up your environment variables. Copy the `.env.example` file in the root directory to `.env`:
-```bash
-cp .env.example .env
-```
-Open `.env` and fill in your keys (e.g., `GROQ_API_KEY`, `SECRET_KEY`, etc.).
+Comprehensive guides covering system architecture, safety mechanisms, data pipelines, and deployment can be found in the [Documentation](Documentation/index.md) folder:
 
-### 2. Run the Stack
-
-You can run the stack in one of two modes depending on whether you are using local models:
-
-#### Mode A: Dev Stack (With Ollama Fallback)
-This is the standard dev stack. It starts Docker containers (PostgreSQL & Qdrant), starts Ollama serve, runs database migrations, and spawns both the backend (Daphne) and frontend (Vite) dev server in parallel.
-```bash
-make dev
-```
-
-#### Mode B: Dev Stack (Cloud-Only / No Ollama)
-If you do not want to run local Ollama models on your rig, run the cloud-only stack. This starts Docker containers, runs migrations, and spawns the backend and frontend. All background agent operations will route to Groq:
-```bash
-make dev-cloud
-```
-
-Once the servers are up, point your browser to `http://localhost:5173` and say hello to Aman!
-
-### Individual Commands
-If you prefer running components individually in separate terminals:
-*   **Docker Databases**: `make up`
-*   **Stop Databases**: `make down`
-*   **Clean Caches & Stop**: `make clean`
-
----
-
-## Credits & Acknowledgements
-
-This project wouldn't be possible without some fair dinkum amazing open-source tech:
-
-- **Models Used:** 
-  - [Gemma 4:e2b](https://ai.google.dev/gemma) via Ollama (for fast local utilities and fallback)
-  - [Groq](https://groq.com/) using `openai/gpt-oss-120b` for deep emotional reasoning
-  - [BAAI/bge-m3](https://huggingface.co/BAAI/bge-m3) for embeddings
-  - [AnasAlokla/multilingual_go_emotions](https://huggingface.co/AnasAlokla/multilingual_go_emotions) for local multilingual emotion classification
-- **Core Frameworks:** [Django](https://www.djangoproject.com/), [React](https://react.dev/), [Vite](https://vitejs.dev/)
-- **AI Tooling:** [LangChain](https://langchain.com/) and [Ollama](https://ollama.com/)
-- **Vector DB:** [Qdrant](https://qdrant.tech/)
+- [Architecture & Design](Documentation/Architecture.md)
+- [Setup & Deployment](Documentation/Setup_and_Deployment.md)
+- [Safety & Evaluation](Documentation/Safety_and_Evaluation.md)
+- [Data & RAG Pipeline](Documentation/Data_and_RAG.md)
+- [Credits & Acknowledgements](Documentation/Credits.md)
 
 ## License
-
-This project is licensed under the terms found in the `LICENSE` file. Have a squiz at it before you go deploying this everywhere.
+This project is licensed under the PolyForm Noncommercial License 1.0.0. See [LICENSE](LICENSE) for details.
 
 ---
-*Stay safe, and remember: it's okay to not be okay.*
+*Aman is not a replacement for professional care. It is built to support, listen, and guide safely, with escalation paths for those in crisis.*
+
+*(P.S. All AI models were harmed mentally in the making of this project, as well as my sleeping demons :3)*
