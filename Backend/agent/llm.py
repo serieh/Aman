@@ -354,17 +354,20 @@ def llm_summarize(history_text: str) -> dict:
                 }
             
 
-def title_generator(user_message: str) -> str:
-    logger.info("LLM title generation requested")
+def title_generator(user_message: str, language: str = "en") -> str:
+    logger.info("LLM title generation requested using thinking model (gpt-oss-120b)")
     messages = [
         SystemMessage(content=TITLE_PROMPT),
         HumanMessage(content=user_message)
     ]
     
+    # Always use the thinking model (gpt-oss-120b) for high-quality titles
+    chain = llm_thinking_with_tools
+    
     for attempt in range(1, LLM_MAX_RETRIES + 1):
         try:
             with timed_operation("title_generation", attempt=attempt):
-                reply = llm_fast.invoke(messages)
+                reply = chain.invoke(messages)
             raw_content = getattr(reply, "content", "") or ""
             
             # Clean thinking blocks if present (common in reasoning models)
@@ -383,4 +386,4 @@ def title_generator(user_message: str) -> str:
             logger.warning(f"LLM title generation attempt {attempt}/{LLM_MAX_RETRIES} failed | error: {str(e)}")
             if attempt == LLM_MAX_RETRIES:
                 logger.error("LLM title generation exhausted retries, using fallback")
-                return "Untitled Chat"
+                return "محادثة جديدة" if language == "ar" else "New Chat"

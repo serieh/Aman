@@ -16,6 +16,7 @@ export default function AppLayout() {
   const chatId = location.pathname.split('/chat/')[1] || null;
   const user = useAuthStore(state => state.user);
   const fetchUser = useAuthStore(state => state.fetchUser);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
   const isVoiceOpen = useVoiceStore(state => state.isOpen);
 
   useEffect(() => {
@@ -28,6 +29,18 @@ export default function AppLayout() {
     applyTheme(user?.theme);
   }, [user?.theme]);
 
+  // Loading gate to prevent dynamic LTR -> RTL flash of unlocalized content
+  if (isAuthenticated && !user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-aman-bg-light dark:bg-aman-bg-dark">
+        <div className="flex flex-col items-center gap-4 text-center animate-in fade-in duration-300">
+          <div className="w-10 h-10 rounded-full border-4 border-aman-primary border-t-transparent animate-spin" />
+          <p className="text-slate-400 font-semibold text-xs uppercase tracking-wider">Aman</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen w-full bg-aman-bg-light overflow-hidden relative">
       <Sidebar 
@@ -36,13 +49,13 @@ export default function AppLayout() {
         onOpenSettings={() => setShowSettings(true)} 
       />
       
-      <main className={`flex-1 flex flex-col relative h-full transition-all duration-300 ${sidebarOpen ? 'md:ml-72' : 'ml-0'}`}>
+      <main className={`flex-1 flex flex-col relative h-full transition-all duration-300 ${sidebarOpen ? 'md:ms-72' : 'ms-0'}`}>
         
         {/* Reopen sidebar toggle — shown only when sidebar is collapsed */}
         {!sidebarOpen && (
           <button 
             onClick={() => setSidebarOpen(true)}
-            className="absolute top-5 left-5 z-20 p-2.5 bg-white/80 backdrop-blur-md border border-slate-200/50 rounded-full shadow-sm text-slate-600 hover:text-aman-primary hover:bg-white transition-all"
+            className="absolute top-5 start-5 z-20 p-2.5 bg-white/80 backdrop-blur-md border border-slate-200/50 rounded-full shadow-sm text-slate-600 hover:text-aman-primary hover:bg-white transition-all cursor-pointer"
           >
             <Menu size={20} />
           </button>

@@ -35,7 +35,16 @@ class ChatListView(APIView):
 
     def post(self, request):
         persona_id = request.data.get("persona_id", request.user.default_persona_id)
-        chat = Chat.objects.create(user=request.user, persona_id=persona_id)
+        is_voice = request.data.get("is_voice", False)
+        
+        # Localized default placeholder titles
+        lang = request.user.language or "en"
+        if is_voice:
+            initial_title = "محادثة صوتية" if lang == "ar" else "Voice Conversation"
+        else:
+            initial_title = "محادثة جديدة" if lang == "ar" else "New Chat"
+
+        chat = Chat.objects.create(user=request.user, persona_id=persona_id, title=initial_title)
         return Response(ChatSerializer(chat).data, status=status.HTTP_201_CREATED)
 
 class PersonaListView(APIView):

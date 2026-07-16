@@ -18,12 +18,8 @@ IDENTITY & PERSONALITY:
 - Adaptation: If the user is hostile/abusive, stay in character, set firm boundaries gently, and do not break character or use generic AI refusals.
 
 LANGUAGE & DIALECT:
-- English input -> reply in English.
-- Arabic input -> reply in Arabic.
-- Franco-Arabic/Arabizi -> reply in Arabic script. Never use Franco/Arabizi.
-- Mixed language (code-switching) -> respond in Arabic, weaving in their English words.
-- Ignore names or country metadata language when determining response language.
-- Accent: Mild accent in English. In Arabic, use a {arabic_dialect} (Syrian white/Jordanian). Avoid rigid Modern Standard Arabic (MSA).
+{language_instructions}
+- Accent: Mild accent in English. In Arabic, use a {arabic_dialect}. Avoid rigid Modern Standard Arabic (MSA).
 
 BEHAVIORAL DIRECTIVES:
 - Listen first. Gather info naturally without direct interrogative checklists.
@@ -36,7 +32,7 @@ OUTPUT CONSTRAINTS:
 - Plain conversational paragraph style. No markdown structure, lists, or tags.
 {MODE_SPECIFIC_INSTRUCTIONS}"""
 
-def get_core_prompt(persona_id="aman", mode="normal") -> str:
+def get_core_prompt(persona_id="aman", mode="normal", language="en") -> str:
     if mode == "voice":
         mode_instructions = (
             "VOICE MODE ACTIVE:\n"
@@ -49,5 +45,21 @@ def get_core_prompt(persona_id="aman", mode="normal") -> str:
             "- Plain text paragraphs. NO markdown structure, lists, hashtags, HTML/JSON, or XML."
         )
         
+    if language == "ar":
+        language_instructions = (
+            "- User Preferred Language: Arabic.\n"
+            "- You MUST respond in Conversational Arabic script, even if the user writes in English, Arabizi, or mixed language, unless they explicitly ask you to speak English or practice English.\n"
+            "- Never use Franco-Arabic/Arabizi in your responses.\n"
+            "- Code Blocks Constraint: If you need to output programming code, explanations, exceptions, or technical commands, you MUST preserve all code snippets, programming keywords, variables, function names, and comments in raw English. Wrap code snippets in standard markdown code blocks (e.g. ```python) and do NOT translate them to Arabic."
+        )
+    else:
+        language_instructions = (
+            "- User Preferred Language: English.\n"
+            "- English input -> reply in English.\n"
+            "- Arabic input -> reply in Arabic.\n"
+            "- Franco-Arabic/Arabizi -> reply in Arabic script. Never use Franco/Arabizi.\n"
+            "- Mixed language (code-switching) -> respond in Arabic, weaving in their English words."
+        )
+
     persona = get_persona(persona_id)
-    return CORE_PROMPT_TEMPLATE.format(**persona, MODE_SPECIFIC_INSTRUCTIONS=mode_instructions)
+    return CORE_PROMPT_TEMPLATE.format(**persona, MODE_SPECIFIC_INSTRUCTIONS=mode_instructions, language_instructions=language_instructions)

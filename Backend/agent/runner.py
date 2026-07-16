@@ -26,16 +26,25 @@ logger.info("Agent runner initialized")
 def _generate_title_background(user_message: str, chat_id: str, user_id: str):
     close_old_connections()
     logger.debug(f"Chat title generation requested | chat_id: {chat_id}")
-    final_title = "Untitled Chat"
+    
+    # Pre-determine fallback language
     try:
-        title = title_generator(user_message)
+        user_lang = Chat.objects.filter(chat_id=chat_id).values_list("user__language", flat=True).first() or "en"
+    except Exception:
+        user_lang = "en"
+    
+    fallback_title = "محادثة جديدة" if user_lang == "ar" else "New Chat"
+    final_title = fallback_title
+    
+    try:
+        title = title_generator(user_message, language=user_lang)
         logger.info(f"Chat title generation completed successfully | chat_id: {chat_id}")
         Chat.objects.filter(chat_id=chat_id).update(title=title)
         final_title = title
     except Exception as e:
-        logger.error(f"Title generation failed, defaulting to 'Untitled Chat' | chat_id: {chat_id} | error: {e}")
+        logger.error(f"Title generation failed, defaulting to localized fallback | chat_id: {chat_id} | error: {e}")
         try:
-            Chat.objects.filter(chat_id=chat_id).update(title="Untitled Chat")
+            Chat.objects.filter(chat_id=chat_id).update(title=fallback_title)
         except Exception as inner:
             logger.error(f"Fallback title update also failed | error: {inner}")
     finally:
@@ -85,14 +94,19 @@ def _get_user_context(user_id: str):
     try:
         user = User.objects.get(id=user_id)
         age = (date.today() - user.birthdate).days // 365 if user.birthdate else "unknown"
-        return (
+        lang_names = {"en": "English", "ar": "Arabic", "es": "Spanish"}
+        pref_lang_name = lang_names.get(user.language, "English")
+        
+        context_str = (
             f"Name: {user.name}\n"
             f"Age: {age}\n"
             f"Gender: {user.gender}\n"
             f"Country: {user.country}\n"
+            f"Preferred Language: {pref_lang_name}\n"
         )
+        return context_str, user.language
     except Exception:
-        return ""
+        return "", "en"
 
 def _get_chat_persona(chat_id: str):
     close_old_connections()
@@ -106,9 +120,16 @@ def _check_chat_title(chat_id: str, user_message: str, user_id: str):
     close_old_connections()
     # Check if a title has ever been generated/attempted for this chat
     chat_title = Chat.objects.filter(chat_id=chat_id).values_list("title", flat=True).first()
-    if chat_title is None:
+    
+    # Identify placeholder titles that can be overwritten by dynamic titles
+    placeholders = {
+        None, "", "Untitled Chat", "Voice Conversation", "New Chat",
+        "محادثة غير معنونة", "محادثة صوتية", "محادثة جديدة"
+    }
+    
+    if chat_title in placeholders:
         # Set a placeholder immediately to block subsequent messages from starting duplicate threads
-        Chat.objects.filter(chat_id=chat_id).update(title="Untitled Chat")
+        Chat.objects.filter(chat_id=chat_id).update(title="Updating title...")
         
         logger.debug(f"Starting background title generation | chat_id: {chat_id}")
         threading.Thread(
@@ -154,7 +175,7 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
                 history,
                 emotion,
                 safety,
-                user_context,
+                (user_context, user_language),
                 (emotion_history, flag_history),
                 db_persona_id
             ) = await asyncio.gather(
@@ -181,6 +202,7 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
                 user_context=user_context,
                 mode=mode,
                 persona_id=persona_id,
+                language=user_language,
                 emotion_history=emotion_history,
                 flag_history=flag_history,
             )
@@ -219,7 +241,7 @@ async def run_agent(user_id: str, chat_id: str, user_message: str, model_prefere
                     tools_called_in_attempt = False
 
                     # Run graph in streaming mode
-                    async for event in GRAPH.astream_events(state_input, version="v1"):
+                    async for event in GRAPH.astream_events(state_input, version="v2"):
                         kind = event["event"]
                         name = event["name"]
 

@@ -5,8 +5,8 @@ from django.contrib.auth.password_validation import validate_password
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["name", "email", "password", "birthdate", "gender", "country", "default_persona_id"]
-        extra_kwargs = {'password': {'write_only': True}, 'default_persona_id': {'required': False}}
+        fields = ["name", "email", "password", "birthdate", "gender", "country", "default_persona_id", "language"]
+        extra_kwargs = {'password': {'write_only': True}, 'default_persona_id': {'required': False}, 'language': {'required': False}}
 
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():

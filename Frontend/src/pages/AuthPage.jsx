@@ -1,12 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
+import { useTranslation } from '../hooks/useTranslation';
 import api from '../api/axios';
 import { ChevronDown, Calendar, AlertCircle, Check, ArrowLeft } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
 export default function AuthPage() {
+  const { t } = useTranslation();
+  const activeLanguage = useAuthStore(state => state.language);
+  const setLanguage = useAuthStore(state => state.setLanguage);
+  
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ name: '', email: '', password: '', birthdate: '', gender: 'female', country: 'US' });
   const [errors, setErrors] = useState({});
@@ -61,6 +66,7 @@ export default function AuthPage() {
       } else {
         const registerData = {
           ...formData,
+          language: activeLanguage, // Pass client preference to DB at registration time
           default_persona_id: selectedPersona
         };
         const { data } = await api.post('/auth/register/', registerData);
@@ -101,7 +107,7 @@ export default function AuthPage() {
   const renderError = (field) => {
     if (!errors[field]) return null;
     const msg = Array.isArray(errors[field]) ? errors[field][0] : errors[field];
-    return <p className="text-red-500 text-xs mt-1 ml-4 flex items-center gap-1"><AlertCircle size={12}/> {msg}</p>;
+    return <p className="text-red-500 text-xs mt-1 ml-4 flex items-center gap-1 text-start"><AlertCircle size={12}/> {msg}</p>;
   };
 
   return (
@@ -110,10 +116,10 @@ export default function AuthPage() {
       <div className="hidden lg:flex w-1/2 aman-gradient-bg items-center justify-center relative overflow-hidden">
         <div className="glass-panel w-3/4 max-w-md p-10 rounded-3xl text-center z-10 shadow-2xl">
           <div className="flex justify-center mb-6">
-            <h1 className="text-6xl font-bold text-slate-800 tracking-tighter">Aman</h1>
+            <h1 className="text-6xl font-bold text-slate-800 tracking-tighter">{t('brand')}</h1>
           </div>
           <p className="text-xl text-slate-700 font-medium leading-relaxed">
-            Welcome to Aman. Find your emotional balance and a safe space for mental well-being.
+            {t('hero_subtitle')}
           </p>
         </div>
       </div>
@@ -121,17 +127,31 @@ export default function AuthPage() {
       {/* Right side: Login Form / Companion Selector */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white dark:bg-slate-900 overflow-y-auto">
         <div className="w-full max-w-md space-y-8 pb-10 relative">
-          {/* Back to landing */}
-          <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors group">
-            <ArrowLeft size={15} className="group-hover:-translate-x-0.5 transition-transform" />
-            Back to home
-          </Link>
+          
+          {/* Header Row: Back Link and Language Selector */}
+          <div className="flex items-center justify-between">
+            <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors group">
+              <ArrowLeft size={15} className="group-hover:-translate-x-0.5 transition-transform rtl:rotate-180 rtl:group-hover:translate-x-0.5" />
+              {t('back_to_home')}
+            </Link>
+            
+            {/* Pre-auth Switcher */}
+            <select 
+              value={activeLanguage}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-350 outline-none focus:ring-2 focus:ring-aman-primary shadow-sm cursor-pointer"
+            >
+              <option value="en">English</option>
+              <option value="ar">العربية</option>
+            </select>
+          </div>
+
           {/* Header */}
           {(isLogin || step === 1) && (
-            <div className="text-center lg:text-left transition-all duration-300">
-              <h2 className="text-3xl font-bold text-slate-900 dark:text-white">{isLogin ? 'Login to Aman' : 'Sign Up for Aman'}</h2>
-              <p className="mt-2 text-slate-600 dark:text-slate-400">
-                {isLogin ? 'Welcome back! Please enter your details.' : 'Create your account to get started.'}
+            <div className="text-center lg:text-start transition-all duration-300">
+              <h2 className="text-3xl font-bold text-slate-900 dark:text-white">{isLogin ? t('login_title') : t('signup_title')}</h2>
+              <p className="mt-2 text-slate-605 dark:text-slate-400">
+                {isLogin ? t('login_subtitle') : t('signup_subtitle')}
               </p>
             </div>
           )}
@@ -139,7 +159,7 @@ export default function AuthPage() {
           {globalError && (
             <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl text-sm font-medium flex items-start gap-2 shadow-sm animate-in fade-in slide-in-from-top-2">
               <AlertCircle size={18} className="mt-0.5 shrink-0"/>
-              <span>{globalError}</span>
+              <span className="text-start">{globalError}</span>
             </div>
           )}
 
@@ -149,28 +169,28 @@ export default function AuthPage() {
               <div className="space-y-4">
                 {!isLogin && (
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1">Full Name</label>
-                    <input type="text" name="name" required={!isLogin && step === 1} value={formData.name} onChange={handleChange} className={`w-full px-5 py-3.5 rounded-full border ${errors.name ? 'border-red-300 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-aman-primary'} bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:border-transparent outline-none transition-all dark:text-white font-medium`} placeholder="Sarah Connor" />
+                    <label className="block text-sm font-medium text-slate-705 dark:text-slate-300 mb-1 ml-1 text-start">{t('fullname')}</label>
+                    <input type="text" name="name" required={!isLogin && step === 1} value={formData.name} onChange={handleChange} className={`w-full px-5 py-3.5 rounded-full border ${errors.name ? 'border-red-300 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-aman-primary'} bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:border-transparent outline-none transition-all dark:text-white font-medium text-start`} placeholder="Sarah Connor" />
                     {renderError('name')}
                   </div>
                 )}
                 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1">Email Address</label>
-                  <input type="email" name="email" required value={formData.email} onChange={handleChange} className={`w-full px-5 py-3.5 rounded-full border ${errors.email ? 'border-red-300 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-aman-primary'} bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:border-transparent outline-none transition-all dark:text-white font-medium`} placeholder="you@example.com" />
+                  <label className="block text-sm font-medium text-slate-705 dark:text-slate-300 mb-1 ml-1 text-start">{t('email')}</label>
+                  <input type="email" name="email" required value={formData.email} onChange={handleChange} className={`w-full px-5 py-3.5 rounded-full border ${errors.email ? 'border-red-300 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-aman-primary'} bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:border-transparent outline-none transition-all dark:text-white font-medium text-start`} placeholder="you@example.com" />
                   {renderError('email')}
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1">Password</label>
-                  <input type="password" name="password" required value={formData.password} onChange={handleChange} className={`w-full px-5 py-3.5 rounded-full border ${errors.password ? 'border-red-300 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-aman-primary'} bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:border-transparent outline-none transition-all dark:text-white font-medium`} placeholder="••••••••" />
+                  <label className="block text-sm font-medium text-slate-705 dark:text-slate-300 mb-1 ml-1 text-start">{t('password')}</label>
+                  <input type="password" name="password" required value={formData.password} onChange={handleChange} className={`w-full px-5 py-3.5 rounded-full border ${errors.password ? 'border-red-300 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-aman-primary'} bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:border-transparent outline-none transition-all dark:text-white font-medium text-start`} placeholder="••••••••" />
                   {renderError('password')}
                 </div>
 
                 {!isLogin && (
                   <div className="flex gap-4">
                     <div className="flex-1">
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1">Birthdate</label>
+                      <label className="block text-sm font-medium text-slate-705 dark:text-slate-300 mb-1 ml-1 text-start">{t('birthdate')}</label>
                       <div className="relative">
                         <DatePicker 
                           selected={formData.birthdate ? new Date(formData.birthdate) : null} 
@@ -184,7 +204,7 @@ export default function AuthPage() {
                               setFormData({ ...formData, birthdate: '' });
                             }
                           }} 
-                          className={`w-full px-5 py-3.5 rounded-full border ${errors.birthdate ? 'border-red-300 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-aman-primary'} bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:border-transparent outline-none transition-all dark:text-white font-medium`} 
+                          className={`w-full px-5 py-3.5 rounded-full border ${errors.birthdate ? 'border-red-300 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-aman-primary'} bg-slate-50 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:border-transparent outline-none transition-all dark:text-white font-medium text-start`} 
                           dateFormat="yyyy-MM-dd"
                           placeholderText="YYYY-MM-DD"
                           maxDate={new Date()}
@@ -193,30 +213,33 @@ export default function AuthPage() {
                           yearDropdownItemNumber={100}
                           required={!isLogin && step === 1}
                         />
-                        <Calendar className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                        <Calendar className="absolute end-4 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
                       </div>
                       {renderError('birthdate')}
                     </div>
                     
                     <div className="flex-1 relative" ref={genderRef}>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 ml-1">Gender</label>
+                      <label className="block text-sm font-medium text-slate-705 dark:text-slate-300 mb-1 ml-1 text-start">{t('gender')}</label>
                       <div 
                         onClick={() => setGenderOpen(!genderOpen)}
                         className={`w-full px-5 py-3.5 rounded-full border ${errors.gender ? 'border-red-300 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'} bg-slate-50 dark:bg-slate-800 cursor-pointer flex items-center justify-between transition-all dark:text-white font-medium`}
                       >
-                        <span className="capitalize">{formData.gender}</span>
+                        <span className="capitalize">{formData.gender === 'female' ? t('gender_female') : t('gender_male')}</span>
                         <ChevronDown size={18} className={`text-slate-400 transition-transform ${genderOpen ? 'rotate-180' : ''}`} />
                       </div>
                       
                       {genderOpen && (
                         <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2">
-                          {['female', 'male'].map(opt => (
+                          {[
+                            { key: 'female', label: t('gender_female') },
+                            { key: 'male', label: t('gender_male') }
+                          ].map(opt => (
                             <div 
-                              key={opt}
-                              onClick={() => handleGenderSelect(opt)}
-                              className="px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-sm font-medium capitalize text-slate-700 dark:text-slate-200 transition-colors"
+                              key={opt.key}
+                              onClick={() => handleGenderSelect(opt.key)}
+                              className="px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-sm font-medium text-slate-705 dark:text-slate-200 transition-colors text-start"
                             >
-                              {opt}
+                              {opt.label}
                             </div>
                           ))}
                         </div>
@@ -228,7 +251,7 @@ export default function AuthPage() {
               </div>
 
               <button disabled={loading} type="submit" className="w-full py-3.5 px-4 bg-aman-primary hover:bg-aman-primary/90 text-white rounded-full font-bold shadow-lg shadow-aman-primary/30 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-70 disabled:hover:scale-100 mt-6 cursor-pointer">
-                {loading ? 'Please wait...' : (isLogin ? 'Login' : 'Continue')}
+                {loading ? t('please_wait') : (isLogin ? t('login') : t('go_back', 'Continue'))}
               </button>
             </div>
 
@@ -241,13 +264,13 @@ export default function AuthPage() {
                   onClick={() => setStep(1)}
                   className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 transition-colors cursor-pointer outline-none"
                 >
-                  <ArrowLeft size={14} />
-                  Go Back
+                  <ArrowLeft size={14} className="rtl:rotate-180" />
+                  {t('go_back')}
                 </button>
 
-                <div className="text-center lg:text-left mb-2">
-                  <h3 className="text-2xl font-bold text-slate-800 dark:text-white">Choose your Companion</h3>
-                  <p className="text-slate-500 text-xs mt-1">Pick the AI companion you'd like to talk to by default.</p>
+                <div className="text-center lg:text-start mb-2">
+                  <h3 className="text-2xl font-bold text-slate-800 dark:text-white">{t('choose_companion')}</h3>
+                  <p className="text-slate-500 text-xs mt-1 text-start">{t('companion_subtitle')}</p>
                 </div>
 
                 {/* Persona Options */}
@@ -255,28 +278,25 @@ export default function AuthPage() {
                   {[
                     {
                       id: "aman",
-                      name: "Aman",
-                      gender: "female",
-                      description: "Bilingual emotional support companion providing warm, friendly, and emotionally intelligent wellness guidance.",
+                      name: t('persona_name_aman'),
+                      description: t('persona_aman_desc'),
                     },
                     {
                       id: "tariq",
-                      name: "Tariq",
-                      gender: "male",
-                      description: "Wellness companion offering practical, structured, and empathetic older brotherly mentorship.",
+                      name: t('persona_name_tariq'),
+                      description: t('persona_tariq_desc'),
                     },
                     {
                       id: "layla",
-                      name: "Layla",
-                      gender: "female",
-                      description: "Wellness support agent specializing in structured, clinical, and cognitive behavioral wellness tools.",
+                      name: t('persona_name_layla'),
+                      description: t('persona_layla_desc'),
                     }
                   ].map(persona => (
                     <button
                       key={persona.id}
                       type="button"
                       onClick={() => setSelectedPersona(persona.id)}
-                      className={`w-full relative flex items-start gap-4 p-4 rounded-2xl border-2 transition-all duration-200 text-left cursor-pointer ${
+                      className={`w-full relative flex items-start gap-4 p-4 rounded-2xl border-2 transition-all duration-200 text-start cursor-pointer ${
                         selectedPersona === persona.id
                           ? 'border-aman-primary bg-aman-primary/5 dark:bg-aman-primary/10 shadow-sm'
                           : 'border-slate-200 dark:border-slate-800 bg-transparent hover:border-slate-300 hover:bg-slate-50/50'
@@ -289,13 +309,13 @@ export default function AuthPage() {
                         {persona.name.charAt(0)}
                       </div>
                       
-                      <div className="flex-1 min-w-0 pr-6">
+                      <div className="flex-1 min-w-0 pe-6">
                         <h4 className="font-bold text-slate-800 dark:text-white text-sm">{persona.name}</h4>
                         <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">{persona.description}</p>
                       </div>
 
                       {selectedPersona === persona.id && (
-                        <div className="absolute top-4 right-4 w-4 h-4 rounded-full bg-aman-primary flex items-center justify-center">
+                        <div className="absolute top-4 end-4 w-4 h-4 rounded-full bg-aman-primary flex items-center justify-center">
                           <Check size={10} className="text-white" strokeWidth={3.5} />
                         </div>
                       )}
@@ -303,21 +323,32 @@ export default function AuthPage() {
                   ))}
                 </div>
 
-                <button disabled={loading} type="submit" className="w-full py-3.5 px-4 bg-aman-primary hover:bg-aman-primary/90 text-white rounded-full font-bold shadow-lg shadow-aman-primary/30 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-70 disabled:hover:scale-100 mt-4 cursor-pointer">
-                  {loading ? 'Creating Account...' : 'Create Account'}
+                <button disabled={loading} type="submit" className="w-full py-3.5 px-4 bg-aman-primary hover:bg-aman-primary/90 text-white rounded-full font-bold shadow-lg shadow-aman-primary/30 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-70 disabled:hover:scale-100 mt-6 cursor-pointer">
+                  {loading ? t('please_wait') : t('sign_up')}
                 </button>
               </div>
             )}
-
-            <div className="text-center mt-6">
-              <span className="text-sm text-slate-600 dark:text-slate-400">
-                {isLogin ? "Don't have an account? " : "Already have an account? "}
-                <button type="button" onClick={() => { setIsLogin(!isLogin); setStep(1); setErrors({}); setGlobalError(''); }} className="text-aman-primary font-bold hover:underline transition-all cursor-pointer">
-                  {isLogin ? 'Sign Up' : 'Login'}
-                </button>
-              </span>
-            </div>
           </form>
+
+          {/* Toggle login/signup */}
+          <div className="text-center font-medium text-sm text-slate-500">
+            {isLogin ? (
+              <p>
+                {t('no_account')}{' '}
+                <button onClick={() => { setIsLogin(false); setErrors({}); setGlobalError(''); setStep(1); }} className="text-aman-primary font-bold hover:underline cursor-pointer">
+                  {t('sign_up')}
+                </button>
+              </p>
+            ) : (
+              <p>
+                {t('have_account')}{' '}
+                <button onClick={() => { setIsLogin(true); setErrors({}); setGlobalError(''); setStep(1); }} className="text-aman-primary font-bold hover:underline cursor-pointer">
+                  {t('login')}
+                </button>
+              </p>
+            )}
+          </div>
+
         </div>
       </div>
     </div>

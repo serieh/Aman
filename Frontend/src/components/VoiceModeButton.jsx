@@ -32,7 +32,8 @@ export default function VoiceModeButton({ chatId }) {
     if (!targetChatId || targetChatId === 'new') {
       try {
         const { data } = await api.post('/chats/', {
-          persona_id: useChatStore.getState().selectedPersonaId || 'aman'
+          persona_id: useChatStore.getState().selectedPersonaId || 'aman',
+          is_voice: true
         });
         targetChatId = String(data.chat_id);
         

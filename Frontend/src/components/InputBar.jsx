@@ -2,13 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Paperclip, ArrowUp, Square, Sparkles, Zap, Mic, MicOff, User } from 'lucide-react';
 import { useChatStore } from '../store/useChatStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from '../hooks/useTranslation';
 import api from '../api/axios';
 import VoiceModeButton from './VoiceModeButton';
 
 export default function InputBar({ chatId }) {
   const isGenerating = useChatStore(state => chatId ? !!state.isGeneratingByChat[String(chatId)] : false);
   const setIsGenerating = (val) => useChatStore.getState().setIsGeneratingForChat(chatId, val);
+  const { t } = useTranslation();
   
   const { inputMessage, setInputMessage, triggerSend, setTriggerSend, model, setModel, chats, setChats, setCurrentChat, setGeneratingTitleChatId, updateChatTitle, personas, selectedPersonaId, setSelectedPersonaId } = useChatStore();
   const [abortController, setAbortController] = useState(null);
@@ -358,27 +360,28 @@ export default function InputBar({ chatId }) {
   };
 
   const models = [
-    { id: '2', label: 'Fast', icon: Zap, description: 'Quick responses' },
-    { id: '1', label: 'Thinking', icon: Sparkles, description: 'Deeper reasoning' },
+    { id: '2', label: t('model_fast'), icon: Zap, description: t('model_fast_desc') },
+    { id: '1', label: t('model_thinking'), icon: Sparkles, description: t('model_thinking_desc') },
   ];
   const activeModel = models.find(m => m.id === model) || models[0];
   const ActiveIcon = activeModel.icon;
 
   const personaTones = {
-    aman: 'Warm & funny friend',
-    tariq: 'Calm wise mentor',
-    layla: 'Professional counselor',
+    aman: t('persona_tone_aman'),
+    tariq: t('persona_tone_tariq'),
+    layla: t('persona_tone_layla'),
   };
   const personaNames = {
-    aman: 'Aman',
-    tariq: 'Tariq',
-    layla: 'Layla'
+    aman: t('persona_name_aman'),
+    tariq: t('persona_name_tariq'),
+    layla: t('persona_name_layla')
   };
   const activePersona = personas.find(p => p.id === selectedPersonaId) || personas[0];
-  const activePersonaName = activePersona?.name || personaNames[selectedPersonaId] || 'Aman';
+  const activePersonaName = personaNames[selectedPersonaId] || activePersona?.name || 'Aman';
 
   return (
-    <div className="rounded-3xl p-1.5 shadow-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/80 mb-4">
+    <div className="w-full flex flex-col items-center">
+      <div className="w-full rounded-3xl p-1.5 shadow-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/80 mb-2">
       {/* Input row */}
       <form ref={formRef} onSubmit={handleSubmit} className="flex items-center gap-1 px-2">
         <input 
@@ -387,20 +390,20 @@ export default function InputBar({ chatId }) {
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={`Message ${activePersonaName}...`}
+          placeholder={t('placeholder', { name: activePersonaName })}
           disabled={isGenerating}
-          className="flex-1 bg-transparent border-none outline-none text-slate-700 dark:text-slate-100 placeholder:text-slate-400 py-3 px-3 disabled:opacity-50 font-medium text-[15px]"
+          className="flex-1 bg-transparent border-none outline-none text-slate-700 dark:text-slate-100 placeholder:text-slate-400 py-3 px-3 disabled:opacity-50 font-medium text-[15px] text-start"
         />
         
         {isGenerating ? (
-          <button type="button" onClick={handleStop} className="p-2 bg-slate-800 dark:bg-white text-white dark:text-slate-800 rounded-full hover:opacity-80 transition-all flex-shrink-0">
+          <button type="button" onClick={handleStop} className="p-2 bg-slate-800 dark:bg-white text-white dark:text-slate-800 rounded-full hover:opacity-80 transition-all flex-shrink-0 cursor-pointer">
             <Square size={16} className="fill-current" />
           </button>
         ) : (
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {chatId !== 'temp' && <VoiceModeButton chatId={chatId || 'new'} />}
-            <button type="submit" disabled={!inputMessage.trim()} className="p-2 bg-slate-800 dark:bg-white text-white dark:text-slate-800 rounded-full transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-700 active:scale-90">
-              <ArrowUp size={16} strokeWidth={2.5} />
+            <button type="submit" disabled={!inputMessage.trim()} className="p-2 bg-slate-800 dark:bg-white text-white dark:text-slate-800 rounded-full transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-700 active:scale-90 cursor-pointer">
+              <ArrowUp size={16} strokeWidth={2.5} className="rtl:rotate-0" />
             </button>
           </div>
         )}
@@ -414,21 +417,21 @@ export default function InputBar({ chatId }) {
             <button 
               type="button"
               onClick={() => setModelMenuOpen(!modelMenuOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
             >
               <ActiveIcon size={13} className="text-aman-primary" />
               {activeModel.label}
             </button>
 
             {modelMenuOpen && (
-              <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden w-48 z-50">
+              <div className="absolute bottom-full start-0 mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden w-48 z-50">
                 {models.map(m => {
                   const Icon = m.icon;
                   return (
                     <button
                       key={m.id}
                       onClick={() => { setModel(m.id); setModelMenuOpen(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-colors ${model === m.id ? 'bg-aman-primary/10 text-aman-primary font-semibold' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-start text-sm transition-colors ${model === m.id ? 'bg-aman-primary/10 text-aman-primary font-semibold' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
                     >
                       <Icon size={16} className={model === m.id ? 'text-aman-primary' : 'text-slate-400'} />
                       <div>
@@ -447,25 +450,25 @@ export default function InputBar({ chatId }) {
             <button 
               type="button"
               onClick={() => setPersonaMenuOpen(!personaMenuOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
             >
               <User size={13} className="text-aman-primary" />
               {activePersonaName}
             </button>
 
             {personaMenuOpen && (
-              <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden w-56 z-50">
+              <div className="absolute bottom-full start-0 mb-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden w-56 z-50">
                 {personas.map(p => (
                   <button
                     key={p.id}
                     onClick={() => { setSelectedPersonaId(p.id); setPersonaMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-colors ${selectedPersonaId === p.id ? 'bg-aman-primary/10 text-aman-primary font-semibold' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-start text-sm transition-colors ${selectedPersonaId === p.id ? 'bg-aman-primary/10 text-aman-primary font-semibold' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
                   >
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${selectedPersonaId === p.id ? 'bg-aman-primary text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
                       {p.name.charAt(0)}
                     </div>
                     <div>
-                      <div className="font-medium">{p.name}</div>
+                      <div className="font-medium">{personaNames[p.id] || p.name}</div>
                       <div className="text-[10px] text-slate-400 font-normal">{personaTones[p.id] || p.description?.slice(0, 30)}</div>
                     </div>
                   </button>
@@ -475,6 +478,15 @@ export default function InputBar({ chatId }) {
           </div>
         </div>
       </div>
+    </div>
+      
+      {/* Disclaimer text under prompt bar */}
+      <span className="text-[10px] text-slate-400 font-semibold mb-2 leading-none text-center">
+        {t('disclaimer_prompt')}{' '}
+        <Link to="/legal" className="underline hover:text-aman-primary transition-colors cursor-pointer">
+          {t('learn_more')}
+        </Link>
+      </span>
     </div>
   );
 }

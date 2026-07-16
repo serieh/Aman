@@ -30,7 +30,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     # Preferences
     theme = models.CharField(max_length=50, default="sunrise-light")
-    language = models.CharField(max_length=10, default="en")
+    language = models.CharField(max_length=10, default="en", choices=[("en", "English"), ("ar", "Arabic")])
     default_persona_id = models.CharField(max_length=50, default="aman")
 
     # Django Admin / Permissions

@@ -5,6 +5,7 @@ import AuthPage from './pages/AuthPage';
 import Dashboard from './pages/Dashboard';
 import ChatRoom from './pages/ChatRoom';
 import LandingPage from './pages/LandingPage';
+import LegalPage from './pages/LegalPage';
 import AppLayout from './layouts/AppLayout';
 
 function PrivateRoute({ children }) {
@@ -17,6 +18,7 @@ function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<AuthPage />} />
+      <Route path="/legal" element={<LegalPage />} />
       <Route path="/app" element={<PrivateRoute><ErrorBoundary><AppLayout /></ErrorBoundary></PrivateRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="chat" element={<Navigate to="/app" replace />} />

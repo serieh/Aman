@@ -19,9 +19,9 @@ Runtime Injection Order
 """
 
 @functools.lru_cache(maxsize=10)
-def _get_static_prompt(persona_id: str, mode: str) -> str:
+def _get_static_prompt(persona_id: str, mode: str, language: str) -> str:
     return "\n\n".join([
-        get_core_prompt(persona_id, mode),
+        get_core_prompt(persona_id, mode, language),
         SAFETY_PROMPT,
         CULTURAL_PROMPT,
         TOOLS_PROMPT,
@@ -34,10 +34,11 @@ def build_system_prompt(
     user_context: str = "",
     mode: str = "normal",
     persona_id: str = "aman",
+    language: str = "en",
     emotion_history: list = None,
     flag_history: list = None,
 ):
-    log_meta = f"System prompt constructed | mode: {mode}"
+    log_meta = f"System prompt constructed | mode: {mode} | language: {language}"
     if emotion:
         emotion_val = emotion.get('emotion', 'unknown') if isinstance(emotion, dict) else emotion
         log_meta += f" | emotion: {emotion_val}"
@@ -51,7 +52,7 @@ def build_system_prompt(
         if user_context:
             parts.append(user_context)
         
-        parts.append(_get_static_prompt(persona_id, mode))
+        parts.append(_get_static_prompt(persona_id, mode, language))
         
         parts.append(build_dynamic_context(
             emotion=emotion,
